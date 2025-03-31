@@ -143,25 +143,6 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
-
-      {userRole === "admin" && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Administration</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              En tant qu'administrateur, vous avez accès à toutes les fonctionnalités:
-            </p>
-            <ul className="list-disc pl-5 space-y-2">
-              <li>Gérer les comptes clients</li>
-              <li>Créer et modifier des dossiers dans Documents Pyramides</li>
-              <li>Déposer des documents dans tous les espaces</li>
-              <li>Ajouter et modifier les contacts</li>
-            </ul>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };
