@@ -1,9 +1,11 @@
+
 import { useState, useEffect, useLayoutEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/components/ui/use-toast";
 import { ArrowLeft, User, Mail, Phone, MapPin, Building, Save, Trash, ExternalLink, Edit } from "lucide-react";
 import {
@@ -32,6 +34,7 @@ const ClientDetail = () => {
   const [editedClient, setEditedClient] = useState<Client | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deleteDocuments, setDeleteDocuments] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -222,11 +225,32 @@ const ClientDetail = () => {
     savedClients = savedClients.filter(c => c.id !== client.id);
     localStorage.setItem("clients", JSON.stringify(savedClients));
     
+    // Supprimer les documents associés si l'option est sélectionnée
+    if (deleteDocuments) {
+      try {
+        // Récupérer tous les documents
+        const savedFilesString = localStorage.getItem("userFiles");
+        if (savedFilesString) {
+          const allFiles = JSON.parse(savedFilesString);
+          
+          // Filtrer les fichiers pour ne garder que ceux qui n'appartiennent pas au client
+          const filteredFiles = allFiles.filter((file: any) => 
+            file.clientId !== client.id
+          );
+          
+          // Sauvegarder les fichiers restants
+          localStorage.setItem("userFiles", JSON.stringify(filteredFiles));
+        }
+      } catch (e) {
+        console.error("Erreur lors de la suppression des documents", e);
+      }
+    }
+    
     setIsDeleteDialogOpen(false);
     
     toast({
       title: "Client supprimé",
-      description: `${client.name} a été supprimé.`,
+      description: `${client.name} a été supprimé${deleteDocuments ? ' avec tous ses documents' : ''}.`,
     });
     
     navigate("/clients");
@@ -464,6 +488,21 @@ const ClientDetail = () => {
               Êtes-vous sûr de vouloir supprimer ce client ? Cette action ne peut pas être annulée.
             </DialogDescription>
           </DialogHeader>
+          <div className="py-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="deleteDocuments" 
+                checked={deleteDocuments}
+                onCheckedChange={(checked) => setDeleteDocuments(checked === true)}
+              />
+              <label
+                htmlFor="deleteDocuments"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Supprimer également tous les documents associés à ce client
+              </label>
+            </div>
+          </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
               Annuler

@@ -6,6 +6,7 @@ import { useState, useEffect, useLayoutEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -14,6 +15,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Client {
   id: string;
@@ -58,6 +67,9 @@ const initialClients: Client[] = [
 const Clients = () => {
   const [clients, setClients] = useState<Client[]>(initialClients);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deleteDocuments, setDeleteDocuments] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -96,6 +108,63 @@ const Clients = () => {
     toast({
       title: "Accès à l'espace client",
       description: `Redirection vers l'espace client de ${client.name}.`,
+    });
+  };
+  
+  const openDeleteDialog = (e: React.MouseEvent, client: Client) => {
+    e.stopPropagation();
+    setClientToDelete(client);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  const handleDeleteClient = () => {
+    if (!clientToDelete) return;
+    
+    // Supprimer le client
+    const savedClientsString = localStorage.getItem("clients");
+    let savedClients: Client[] = [];
+    
+    if (savedClientsString) {
+      try {
+        savedClients = JSON.parse(savedClientsString);
+      } catch (e) {
+        console.error("Error parsing clients from localStorage", e);
+      }
+    }
+    
+    savedClients = savedClients.filter(c => c.id !== clientToDelete.id);
+    localStorage.setItem("clients", JSON.stringify(savedClients));
+    
+    // Mettre à jour la liste des clients
+    setClients(clients.filter(c => c.id !== clientToDelete.id));
+    
+    // Supprimer les documents associés si l'option est sélectionnée
+    if (deleteDocuments) {
+      try {
+        // Récupérer tous les documents
+        const savedFilesString = localStorage.getItem("userFiles");
+        if (savedFilesString) {
+          const allFiles = JSON.parse(savedFilesString);
+          
+          // Filtrer les fichiers pour ne garder que ceux qui n'appartiennent pas au client
+          const filteredFiles = allFiles.filter((file: any) => 
+            file.clientId !== clientToDelete.id
+          );
+          
+          // Sauvegarder les fichiers restants
+          localStorage.setItem("userFiles", JSON.stringify(filteredFiles));
+        }
+      } catch (e) {
+        console.error("Erreur lors de la suppression des documents", e);
+      }
+    }
+    
+    setIsDeleteDialogOpen(false);
+    setClientToDelete(null);
+    
+    toast({
+      title: "Client supprimé",
+      description: `${clientToDelete.name} a été supprimé${deleteDocuments ? ' avec tous ses documents' : ''}.`,
     });
   };
 
@@ -185,6 +254,15 @@ const Clients = () => {
                       <ExternalLink className="h-4 w-4" />
                       <span className="sr-only">Espace client</span>
                     </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className="text-red-500 hover:text-red-700" 
+                      onClick={(e) => openDeleteDialog(e, client)}
+                    >
+                      <Trash className="h-4 w-4" />
+                      <span className="sr-only">Supprimer</span>
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -192,6 +270,40 @@ const Clients = () => {
           </TableBody>
         </Table>
       </div>
+      
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Confirmer la suppression</DialogTitle>
+            <DialogDescription>
+              Êtes-vous sûr de vouloir supprimer {clientToDelete?.name} ? Cette action ne peut pas être annulée.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="deleteDocuments" 
+                checked={deleteDocuments}
+                onCheckedChange={(checked) => setDeleteDocuments(checked === true)}
+              />
+              <label
+                htmlFor="deleteDocuments"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Supprimer également tous les documents associés à ce client
+              </label>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteClient}>
+              Supprimer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

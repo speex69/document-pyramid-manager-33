@@ -4,13 +4,13 @@ import { useState, useEffect } from "react";
 
 // Sample initial data for the demo with colors and icons
 const sampleUserFiles = [
-  { id: "folder-1", name: "Documents administratifs", type: "folder" as const, parentId: null },
-  { id: "folder-2", name: "Projets", type: "folder" as const, parentId: null },
-  { id: "file-1", name: "Note de service.pdf", type: "file" as const, parentId: null, date: "2023-05-28" },
-  { id: "file-2", name: "Planning 2023.xlsx", type: "file" as const, parentId: null, date: "2023-05-20" },
-  { id: "file-3", name: "Carte d'identité.pdf", type: "file" as const, parentId: "folder-1", date: "2023-05-05" },
-  { id: "file-4", name: "Projet A - Budget.pdf", type: "file" as const, parentId: "folder-2", date: "2023-04-15" },
-  { id: "file-5", name: "Projet B - Planning.pdf", type: "file" as const, parentId: "folder-2", date: "2023-03-22" },
+  { id: "folder-1", name: "Documents administratifs", type: "folder" as const, parentId: null, clientId: "1" },
+  { id: "folder-2", name: "Projets", type: "folder" as const, parentId: null, clientId: "2" },
+  { id: "file-1", name: "Note de service.pdf", type: "file" as const, parentId: null, date: "2023-05-28", clientId: "1" },
+  { id: "file-2", name: "Planning 2023.xlsx", type: "file" as const, parentId: null, date: "2023-05-20", clientId: "1" },
+  { id: "file-3", name: "Carte d'identité.pdf", type: "file" as const, parentId: "folder-1", date: "2023-05-05", clientId: "1" },
+  { id: "file-4", name: "Projet A - Budget.pdf", type: "file" as const, parentId: "folder-2", date: "2023-04-15", clientId: "2" },
+  { id: "file-5", name: "Projet B - Planning.pdf", type: "file" as const, parentId: "folder-2", date: "2023-03-22", clientId: "3" },
 ];
 
 const MesDocuments = () => {
@@ -18,6 +18,24 @@ const MesDocuments = () => {
   const [sortedFiles, setSortedFiles] = useState(sampleUserFiles);
   
   useEffect(() => {
+    // Load any saved files from localStorage
+    const savedFilesString = localStorage.getItem("userFiles");
+    let allFiles = [...sampleUserFiles];
+    
+    if (savedFilesString) {
+      try {
+        const savedFiles = JSON.parse(savedFilesString);
+        allFiles = [...sampleUserFiles, ...savedFiles.filter((file: any) => 
+          !sampleUserFiles.some(sampleFile => sampleFile.id === file.id)
+        )];
+      } catch (e) {
+        console.error("Error loading files from localStorage", e);
+      }
+    } else {
+      // Initialize localStorage with sample files if it doesn't exist
+      localStorage.setItem("userFiles", JSON.stringify(sampleUserFiles));
+    }
+    
     // Trier les fichiers selon l'option sélectionnée
     const files = [...sampleUserFiles];
     
