@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+
+import { useState, useEffect, useRef, DragEvent } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,6 +68,11 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  
+  // Drag and drop states
+  const [draggedItem, setDraggedItem] = useState<FileType | null>(null);
+  const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
 
   useEffect(() => {
     const role = localStorage.getItem("userRole");
@@ -250,6 +256,299 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
     
     return <Folder className="folder-icon text-red-500" />;
   };
+  
+  // Drag and Drop handlers
+  const handleDragStart = (e: DragEvent<HTMLDivElement>, item: FileType) => {
+    if (!isEditable && userRole !== "admin") return;
+    
+    e.dataTransfer.setData("text/plain", item.id);
+    setDraggedItem(item);
+    
+    // Add a custom drag image - optional enhancement
+    const dragPreview = document.createElement("div");
+    dragPreview.className = "bg-background p-2 rounded border shadow-md";
+    dragPreview.innerHTML = `
+      <div class="flex items-center gap-2">
+        ${item.type === "folder" ? 
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path></svg>' : 
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>'}
+        ${item.name}
+      </div>
+    `;
+    document.body.appendChild(dragPreview);
+    
+    try {
+      e.dataTransfer.setDragImage(dragPreview, 20, 20);
+    } catch (e) {
+      console.log("Error setting drag image:", e);
+    }
+    
+    // Clean up after a short delay
+    setTimeout(() => {
+      document.body.removeChild(dragPreview);
+    }, 0);
+  };
+  
+  const handleDragOver = (e: DragEvent<HTMLDivElement>, targetFolder?: FileType) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (targetFolder && targetFolder.type === "folder") {
+      setDragOverFolderId(targetFolder.id);
+    } else if (!targetFolder) {
+      // When dragging over the empty area
+      setIsDraggingOver(true);
+    }
+  };
+  
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setDragOverFolderId(null);
+    setIsDraggingOver(false);
+  };
+  
+  const handleDrop = (e: DragEvent<HTMLDivElement>, targetFolder?: FileType) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    let targetFolderId = targetFolder?.id;
+    
+    // If no specific target folder and dropping in the container, use current folder
+    if (!targetFolderId && !targetFolder) {
+      targetFolderId = currentFolder;
+    }
+    
+    // Reset states
+    setDragOverFolderId(null);
+    setIsDraggingOver(false);
+    
+    if (!draggedItem) return;
+    
+    // Don't allow dropping a folder into itself or its descendants
+    if (draggedItem.type === "folder" && targetFolderId === draggedItem.id) {
+      toast({
+        variant: "destructive",
+        title: "Action impossible",
+        description: "Vous ne pouvez pas déplacer un dossier dans lui-même."
+      });
+      return;
+    }
+    
+    // Check if target is descendant of the dragged folder
+    if (draggedItem.type === "folder" && targetFolder?.type === "folder") {
+      let current = targetFolder;
+      let found = false;
+      
+      // Check if target folder is a descendant of the dragged folder
+      const checkIfDescendant = (folderId: string, potentialParentId: string): boolean => {
+        const folder = files.find(f => f.id === folderId);
+        if (!folder) return false;
+        if (folder.parentId === potentialParentId) return true;
+        if (folder.parentId === null) return false;
+        return checkIfDescendant(folder.parentId, potentialParentId);
+      };
+      
+      if (checkIfDescendant(targetFolder.id, draggedItem.id)) {
+        toast({
+          variant: "destructive",
+          title: "Action impossible",
+          description: "Vous ne pouvez pas déplacer un dossier dans l'un de ses sous-dossiers."
+        });
+        return;
+      }
+    }
+    
+    // Move the file/folder to the target folder
+    const updatedFiles = files.map(file => {
+      if (file.id === draggedItem.id) {
+        return { ...file, parentId: targetFolderId };
+      }
+      return file;
+    });
+    
+    setFiles(updatedFiles);
+    
+    toast({
+      title: "Élément déplacé",
+      description: `"${draggedItem.name}" a été déplacé avec succès.`
+    });
+    
+    setDraggedItem(null);
+  };
+
+  const handleEmptyAreaDrop = (e: DragEvent<HTMLDivElement>) => {
+    handleDrop(e); // Reuse handleDrop with no specific target folder
+  };
+
+  // Render the files container with drag and drop capability
+  const renderFilesContainer = () => {
+    if (sortedFiles.length === 0) {
+      return (
+        <div 
+          className={`text-center py-10 text-muted-foreground border-2 border-dashed rounded-lg transition-colors ${isDraggingOver ? 'bg-muted/50 border-primary/50' : ''}`}
+          onDragOver={(e) => handleDragOver(e)}
+          onDragLeave={handleDragLeave}
+          onDrop={handleEmptyAreaDrop}
+        >
+          {isSearching 
+            ? "Aucun résultat trouvé"
+            : isDraggingOver 
+              ? "Déposer ici pour déplacer dans ce dossier" 
+              : "Ce dossier est vide"}
+        </div>
+      );
+    }
+    
+    if (viewMode === "grid") {
+      return (
+        <div 
+          className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 ${isDraggingOver ? 'p-2 border-2 border-dashed border-primary/50 rounded-lg' : ''}`}
+          onDragOver={(e) => handleDragOver(e)}
+          onDragLeave={handleDragLeave}
+          onDrop={handleEmptyAreaDrop}
+        >
+          {sortedFiles.map((file) => (
+            <ContextMenu key={file.id}>
+              <ContextMenuTrigger>
+                <div
+                  draggable={(isEditable || userRole === "admin")}
+                  onDragStart={(e) => handleDragStart(e, file)}
+                  onDragOver={(e) => handleDragOver(e, file)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, file)}
+                  onClick={() => 
+                    file.type === "folder" 
+                      ? navigateToFolder(file.id, file.name) 
+                      : handlePreview(file)
+                  }
+                  className={`cursor-pointer hover:bg-muted transition-colors p-2 flex flex-col items-center justify-center rounded-md ${
+                    dragOverFolderId === file.id && file.type === "folder" 
+                      ? 'ring-2 ring-primary bg-muted/50' 
+                      : ''
+                  } ${draggedItem?.id === file.id ? 'opacity-50' : ''}`}
+                >
+                  {renderFileIcon(file)}
+                  <p className="text-center truncate w-full text-sm">{file.name}</p>
+                </div>
+              </ContextMenuTrigger>
+              <ContextMenuContent>
+                {file.type === "folder" && (
+                  <ContextMenuItem 
+                    onClick={() => navigateToFolder(file.id, file.name)}
+                    className="flex items-center gap-2"
+                  >
+                    <Folder className="h-4 w-4" /> Ouvrir
+                  </ContextMenuItem>
+                )}
+                {file.type === "file" && (
+                  <ContextMenuItem 
+                    onClick={() => handlePreview(file)}
+                    className="flex items-center gap-2"
+                  >
+                    <Eye className="h-4 w-4" /> Aperçu
+                  </ContextMenuItem>
+                )}
+                {(isEditable || userRole === "admin") && (
+                  <ContextMenuItem 
+                    onClick={() => handleDelete(file)}
+                    className="flex items-center gap-2 text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" /> Supprimer
+                  </ContextMenuItem>
+                )}
+              </ContextMenuContent>
+            </ContextMenu>
+          ))}
+        </div>
+      );
+    } else {
+      // List view with drag and drop
+      return (
+        <div
+          className={`${isDraggingOver ? 'p-2 border-2 border-dashed border-primary/50 rounded-lg' : ''}`}
+          onDragOver={(e) => handleDragOver(e)}
+          onDragLeave={handleDragLeave}
+          onDrop={handleEmptyAreaDrop}
+        >
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-12"></TableHead>
+                <TableHead>Nom</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead className="w-24 text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedFiles.map((file) => (
+                <TableRow 
+                  key={file.id}
+                  draggable={(isEditable || userRole === "admin")}
+                  onDragStart={(e) => handleDragStart(e, file)}
+                  onDragOver={(e) => handleDragOver(e, file)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, file)}
+                  className={`${
+                    dragOverFolderId === file.id && file.type === "folder" 
+                      ? 'ring-1 ring-primary bg-muted/50' 
+                      : ''
+                  } ${draggedItem?.id === file.id ? 'opacity-50' : ''}`}
+                >
+                  <TableCell>
+                    {renderFileIcon(file)}
+                  </TableCell>
+                  <TableCell
+                    className="font-medium cursor-pointer"
+                    onClick={() => 
+                      file.type === "folder" 
+                        ? navigateToFolder(file.id, file.name) 
+                        : handlePreview(file)
+                    }
+                  >
+                    {file.name}
+                  </TableCell>
+                  <TableCell>{file.type === "folder" ? "Dossier" : "Fichier"}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      {file.type === "folder" ? (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => navigateToFolder(file.id, file.name)}
+                        >
+                          <Folder className="h-4 w-4 text-red-500" />
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handlePreview(file)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {(isEditable || userRole === "admin") && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => handleDelete(file)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      );
+    }
+  };
 
   return (
     <Card className="w-full">
@@ -373,121 +672,7 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
           </div>
         )}
 
-        {sortedFiles.length === 0 ? (
-          <div className="text-center py-10 text-muted-foreground">
-            {isSearching 
-              ? "Aucun résultat trouvé"
-              : "Ce dossier est vide"}
-          </div>
-        ) : viewMode === "grid" ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {sortedFiles.map((file) => (
-              <ContextMenu key={file.id}>
-                <ContextMenuTrigger>
-                  <Card
-                    className="cursor-pointer hover:bg-muted transition-colors p-2 flex flex-col items-center justify-center"
-                    onClick={() => 
-                      file.type === "folder" 
-                        ? navigateToFolder(file.id, file.name) 
-                        : handlePreview(file)
-                    }
-                  >
-                    {renderFileIcon(file)}
-                    <p className="text-center truncate w-full text-sm">{file.name}</p>
-                  </Card>
-                </ContextMenuTrigger>
-                <ContextMenuContent>
-                  {file.type === "folder" && (
-                    <ContextMenuItem 
-                      onClick={() => navigateToFolder(file.id, file.name)}
-                      className="flex items-center gap-2"
-                    >
-                      <Folder className="h-4 w-4" /> Ouvrir
-                    </ContextMenuItem>
-                  )}
-                  {file.type === "file" && (
-                    <ContextMenuItem 
-                      onClick={() => handlePreview(file)}
-                      className="flex items-center gap-2"
-                    >
-                      <Eye className="h-4 w-4" /> Aperçu
-                    </ContextMenuItem>
-                  )}
-                  {(isEditable || userRole === "admin") && (
-                    <ContextMenuItem 
-                      onClick={() => handleDelete(file)}
-                      className="flex items-center gap-2 text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" /> Supprimer
-                    </ContextMenuItem>
-                  )}
-                </ContextMenuContent>
-              </ContextMenu>
-            ))}
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12"></TableHead>
-                <TableHead>Nom</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead className="w-24 text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedFiles.map((file) => (
-                <TableRow key={file.id}>
-                  <TableCell>
-                    {renderFileIcon(file)}
-                  </TableCell>
-                  <TableCell
-                    className="font-medium cursor-pointer"
-                    onClick={() => 
-                      file.type === "folder" 
-                        ? navigateToFolder(file.id, file.name) 
-                        : handlePreview(file)
-                    }
-                  >
-                    {file.name}
-                  </TableCell>
-                  <TableCell>{file.type === "folder" ? "Dossier" : "Fichier"}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      {file.type === "folder" ? (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => navigateToFolder(file.id, file.name)}
-                        >
-                          <Folder className="h-4 w-4 text-red-500" />
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handlePreview(file)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      )}
-                      {(isEditable || userRole === "admin") && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => handleDelete(file)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+        {renderFilesContainer()}
       </CardContent>
       
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
