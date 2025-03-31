@@ -26,6 +26,7 @@ const MesDocuments = () => {
         title="Mes Documents" 
         isEditable={true} 
         initialFiles={sampleUserFiles}
+        enableDragAndDrop={true}
       />
     </div>
   );

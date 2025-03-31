@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, DragEvent } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,9 +36,10 @@ type FileExplorerProps = {
   title: string;
   isEditable: boolean;
   initialFiles?: FileType[];
+  enableDragAndDrop?: boolean;
 };
 
-const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProps) => {
+const FileExplorer = ({ title, isEditable, initialFiles = [], enableDragAndDrop = false }: FileExplorerProps) => {
   const processedInitialFiles = initialFiles.map(file => {
     if (file.type === "folder") {
       return { ...file, color: "red" };
@@ -259,7 +259,7 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
   
   // Drag and Drop handlers
   const handleDragStart = (e: DragEvent<HTMLDivElement>, item: FileType) => {
-    if (!isEditable && userRole !== "admin") return;
+    if (!enableDragAndDrop || (!isEditable && userRole !== "admin")) return;
     
     e.dataTransfer.setData("text/plain", item.id);
     setDraggedItem(item);
@@ -293,6 +293,13 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
     e.preventDefault();
     e.stopPropagation();
     
+    if (!enableDragAndDrop || !draggedItem) return;
+    
+    // Don't allow files to be dropped onto other files
+    if (targetFolder?.type === "file") {
+      return;
+    }
+    
     if (targetFolder && targetFolder.type === "folder") {
       setDragOverFolderId(targetFolder.id);
     } else if (!targetFolder) {
@@ -313,6 +320,22 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
     e.preventDefault();
     e.stopPropagation();
     
+    if (!enableDragAndDrop || !draggedItem) return;
+    
+    // Don't allow dropping onto files
+    if (targetFolder?.type === "file") {
+      toast({
+        variant: "destructive",
+        title: "Action impossible",
+        description: "Vous ne pouvez pas déplacer un élément dans un fichier, uniquement dans un dossier."
+      });
+      
+      setDragOverFolderId(null);
+      setIsDraggingOver(false);
+      setDraggedItem(null);
+      return;
+    }
+    
     let targetFolderId = targetFolder?.id;
     
     // If no specific target folder and dropping in the container, use current folder
@@ -324,8 +347,6 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
     setDragOverFolderId(null);
     setIsDraggingOver(false);
     
-    if (!draggedItem) return;
-    
     // Don't allow dropping a folder into itself or its descendants
     if (draggedItem.type === "folder" && targetFolderId === draggedItem.id) {
       toast({
@@ -333,6 +354,7 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
         title: "Action impossible",
         description: "Vous ne pouvez pas déplacer un dossier dans lui-même."
       });
+      setDraggedItem(null);
       return;
     }
     
@@ -356,6 +378,7 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
           title: "Action impossible",
           description: "Vous ne pouvez pas déplacer un dossier dans l'un de ses sous-dossiers."
         });
+        setDraggedItem(null);
         return;
       }
     }
@@ -388,9 +411,9 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
       return (
         <div 
           className={`text-center py-10 text-muted-foreground border-2 border-dashed rounded-lg transition-colors ${isDraggingOver ? 'bg-muted/50 border-primary/50' : ''}`}
-          onDragOver={(e) => handleDragOver(e)}
-          onDragLeave={handleDragLeave}
-          onDrop={handleEmptyAreaDrop}
+          onDragOver={(e) => enableDragAndDrop ? handleDragOver(e) : undefined}
+          onDragLeave={enableDragAndDrop ? handleDragLeave : undefined}
+          onDrop={enableDragAndDrop ? handleEmptyAreaDrop : undefined}
         >
           {isSearching 
             ? "Aucun résultat trouvé"
@@ -405,19 +428,19 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
       return (
         <div 
           className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 ${isDraggingOver ? 'p-2 border-2 border-dashed border-primary/50 rounded-lg' : ''}`}
-          onDragOver={(e) => handleDragOver(e)}
-          onDragLeave={handleDragLeave}
-          onDrop={handleEmptyAreaDrop}
+          onDragOver={(e) => enableDragAndDrop ? handleDragOver(e) : undefined}
+          onDragLeave={enableDragAndDrop ? handleDragLeave : undefined}
+          onDrop={enableDragAndDrop ? handleEmptyAreaDrop : undefined}
         >
           {sortedFiles.map((file) => (
             <ContextMenu key={file.id}>
               <ContextMenuTrigger>
                 <div
-                  draggable={(isEditable || userRole === "admin")}
-                  onDragStart={(e) => handleDragStart(e, file)}
-                  onDragOver={(e) => handleDragOver(e, file)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, file)}
+                  draggable={(enableDragAndDrop && (isEditable || userRole === "admin"))}
+                  onDragStart={(e) => enableDragAndDrop ? handleDragStart(e, file) : undefined}
+                  onDragOver={(e) => enableDragAndDrop ? handleDragOver(e, file) : undefined}
+                  onDragLeave={enableDragAndDrop ? handleDragLeave : undefined}
+                  onDrop={(e) => enableDragAndDrop ? handleDrop(e, file) : undefined}
                   onClick={() => 
                     file.type === "folder" 
                       ? navigateToFolder(file.id, file.name) 
@@ -468,9 +491,9 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
       return (
         <div
           className={`${isDraggingOver ? 'p-2 border-2 border-dashed border-primary/50 rounded-lg' : ''}`}
-          onDragOver={(e) => handleDragOver(e)}
-          onDragLeave={handleDragLeave}
-          onDrop={handleEmptyAreaDrop}
+          onDragOver={(e) => enableDragAndDrop ? handleDragOver(e) : undefined}
+          onDragLeave={enableDragAndDrop ? handleDragLeave : undefined}
+          onDrop={enableDragAndDrop ? handleEmptyAreaDrop : undefined}
         >
           <Table>
             <TableHeader>
@@ -485,11 +508,11 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
               {sortedFiles.map((file) => (
                 <TableRow 
                   key={file.id}
-                  draggable={(isEditable || userRole === "admin")}
-                  onDragStart={(e) => handleDragStart(e, file)}
-                  onDragOver={(e) => handleDragOver(e, file)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, file)}
+                  draggable={(enableDragAndDrop && (isEditable || userRole === "admin"))}
+                  onDragStart={(e) => enableDragAndDrop ? handleDragStart(e, file) : undefined}
+                  onDragOver={(e) => enableDragAndDrop ? handleDragOver(e, file) : undefined}
+                  onDragLeave={enableDragAndDrop ? handleDragLeave : undefined}
+                  onDrop={(e) => enableDragAndDrop ? handleDrop(e, file) : undefined}
                   className={`${
                     dragOverFolderId === file.id && file.type === "folder" 
                       ? 'ring-1 ring-primary bg-muted/50' 

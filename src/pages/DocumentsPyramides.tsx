@@ -37,6 +37,7 @@ const DocumentsPyramides = () => {
         title="Documents Pyramides" 
         isEditable={userRole === "admin"} 
         initialFiles={samplePyramideFiles}
+        enableDragAndDrop={true}
       />
     </div>
   );
