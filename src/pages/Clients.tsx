@@ -15,7 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-interface Contact {
+interface Client {
   id: string;
   name: string;
   role: string;
@@ -25,7 +25,7 @@ interface Contact {
   address: string;
 }
 
-const initialContacts: Contact[] = [
+const initialClients: Client[] = [
   {
     id: "1",
     name: "Sophie Martin",
@@ -55,8 +55,8 @@ const initialContacts: Contact[] = [
   }
 ];
 
-const Contacts = () => {
-  const [contacts, setContacts] = useState<Contact[]>(initialContacts);
+const Clients = () => {
+  const [clients, setClients] = useState<Client[]>(initialClients);
   const [userRole, setUserRole] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -65,22 +65,22 @@ const Contacts = () => {
     const role = localStorage.getItem("userRole");
     setUserRole(role);
     
-    // Load contacts from localStorage if available
-    const savedContacts = localStorage.getItem("contacts");
-    if (savedContacts) {
+    // Load clients from localStorage if available
+    const savedClients = localStorage.getItem("clients");
+    if (savedClients) {
       try {
-        const parsedContacts = JSON.parse(savedContacts);
-        setContacts([...initialContacts, ...parsedContacts]);
+        const parsedClients = JSON.parse(savedClients);
+        setClients([...initialClients, ...parsedClients]);
       } catch (e) {
-        console.error("Error loading contacts from localStorage", e);
+        console.error("Error loading clients from localStorage", e);
       }
     }
   }, []);
 
-  const handleAccessClientSpace = (contact: Contact) => {
+  const handleAccessClientSpace = (client: Client) => {
     toast({
       title: "Accès à l'espace client",
-      description: `Redirection vers l'espace client de ${contact.name}.`,
+      description: `Redirection vers l'espace client de ${client.name}.`,
     });
   };
 
@@ -88,15 +88,15 @@ const Contacts = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Contacts</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Clients</h2>
           <p className="text-muted-foreground">
-            Vos contacts chez Pyramide Conseil.
+            Vos clients chez Pyramide Conseil.
           </p>
         </div>
         
         {userRole === "admin" && (
-          <Button onClick={() => navigate("/contacts/add")}>
-            <Plus className="mr-2 h-4 w-4" /> Ajouter un contact
+          <Button onClick={() => navigate("/clients/add")}>
+            <Plus className="mr-2 h-4 w-4" /> Ajouter un client
           </Button>
         )}
       </div>
@@ -114,31 +114,31 @@ const Contacts = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {contacts.map((contact) => (
+            {clients.map((client) => (
               <TableRow 
-                key={contact.id} 
+                key={client.id} 
                 className="cursor-pointer hover:bg-muted"
-                onClick={() => navigate(`/contacts/${contact.id}`)}
+                onClick={() => navigate(`/clients/${client.id}`)}
               >
-                <TableCell className="font-medium">{contact.name}</TableCell>
-                <TableCell>{contact.role}</TableCell>
-                <TableCell>{contact.company}</TableCell>
+                <TableCell className="font-medium">{client.name}</TableCell>
+                <TableCell>{client.role}</TableCell>
+                <TableCell>{client.company}</TableCell>
                 <TableCell>
                   <a 
-                    href={`mailto:${contact.email}`} 
+                    href={`mailto:${client.email}`} 
                     className="text-blue-600 hover:underline"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {contact.email}
+                    {client.email}
                   </a>
                 </TableCell>
                 <TableCell>
                   <a 
-                    href={`tel:${contact.phone}`} 
+                    href={`tel:${client.phone}`} 
                     className="text-blue-600 hover:underline"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {contact.phone}
+                    {client.phone}
                   </a>
                 </TableCell>
                 <TableCell className="text-right">
@@ -148,7 +148,7 @@ const Contacts = () => {
                       size="sm" 
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/contacts/${contact.id}`);
+                        navigate(`/clients/${client.id}`);
                       }}
                     >
                       <User className="h-4 w-4" />
@@ -159,7 +159,7 @@ const Contacts = () => {
                       size="sm" 
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleAccessClientSpace(contact);
+                        handleAccessClientSpace(client);
                       }}
                     >
                       <ExternalLink className="h-4 w-4" />
@@ -176,4 +176,4 @@ const Contacts = () => {
   );
 };
 
-export default Contacts;
+export default Clients;

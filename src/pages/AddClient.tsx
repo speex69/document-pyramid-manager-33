@@ -1,15 +1,28 @@
 
+// Convert AddContact.tsx to AddClient.tsx
+// Make sure to rename all "contact" references to "client"
+
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { useNavigate } from "react-router-dom";
 import { ArrowLeft, User, Mail, Phone, MapPin, Building } from "lucide-react";
 
-const AddContact = () => {
-  const [newContact, setNewContact] = useState({
+interface Client {
+  id: string;
+  name: string;
+  role: string;
+  company: string;
+  email: string;
+  phone: string;
+  address: string;
+}
+
+const AddClient = () => {
+  const [newClient, setNewClient] = useState<Omit<Client, "id">>({
     name: "",
     role: "",
     company: "",
@@ -22,11 +35,13 @@ const AddContact = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setNewContact(prev => ({ ...prev, [name]: value }));
+    setNewClient(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleAddContact = () => {
-    if (!newContact.name || !newContact.email) {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newClient.name || !newClient.email) {
       toast({
         variant: "destructive",
         title: "Erreur",
@@ -35,53 +50,62 @@ const AddContact = () => {
       return;
     }
 
-    // Get existing contacts from localStorage, or initialize empty array
-    const existingContacts = JSON.parse(localStorage.getItem("contacts") || "[]");
-    
-    // Create new contact with unique ID
-    const contact = {
-      id: `${Date.now()}`,
-      ...newContact
+    // Create a new client with a unique ID
+    const client: Client = {
+      id: `client-${Date.now()}`,
+      ...newClient
     };
-    
-    // Add new contact to array and save back to localStorage
-    const updatedContacts = [...existingContacts, contact];
-    localStorage.setItem("contacts", JSON.stringify(updatedContacts));
-    
+
+    // Get existing clients from localStorage
+    const existingClientsString = localStorage.getItem("clients");
+    let existingClients: Client[] = [];
+
+    if (existingClientsString) {
+      try {
+        existingClients = JSON.parse(existingClientsString);
+      } catch (e) {
+        console.error("Error parsing clients from localStorage", e);
+      }
+    }
+
+    // Add the new client to the list
+    existingClients.push(client);
+
+    // Save back to localStorage
+    localStorage.setItem("clients", JSON.stringify(existingClients));
+
     toast({
-      title: "Contact ajouté",
-      description: `${contact.name} a été ajouté avec succès.`,
+      title: "Client ajouté",
+      description: `${client.name} a été ajouté avec succès.`,
     });
-    
-    // Navigate back to contacts page
-    navigate("/contacts");
+
+    // Navigate back to the clients list
+    navigate("/clients");
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center">
+      <div className="flex items-center mb-6">
         <Button 
           variant="ghost" 
           size="icon" 
-          onClick={() => navigate("/contacts")}
+          onClick={() => navigate("/clients")}
           className="mr-2"
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Ajouter un contact</h2>
-          <p className="text-muted-foreground">
-            Créez un nouveau contact dans votre réseau.
-          </p>
+          <h2 className="text-3xl font-bold tracking-tight">Ajouter un client</h2>
+          <p className="text-muted-foreground">Créer un nouveau client dans le système.</p>
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Informations du contact</CardTitle>
+          <CardTitle>Informations du client</CardTitle>
         </CardHeader>
         <CardContent>
-          <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); handleAddContact(); }}>
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -92,7 +116,7 @@ const AddContact = () => {
                   <Input
                     id="name"
                     name="name"
-                    value={newContact.name}
+                    value={newClient.name}
                     onChange={handleInputChange}
                     required
                   />
@@ -105,12 +129,12 @@ const AddContact = () => {
                   <Input
                     id="role"
                     name="role"
-                    value={newContact.role}
+                    value={newClient.role}
                     onChange={handleInputChange}
                   />
                 </div>
               </div>
-                
+              
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Building className="h-4 w-4 text-muted-foreground" />
@@ -119,7 +143,7 @@ const AddContact = () => {
                 <Input
                   id="company"
                   name="company"
-                  value={newContact.company}
+                  value={newClient.company}
                   onChange={handleInputChange}
                 />
               </div>
@@ -133,7 +157,7 @@ const AddContact = () => {
                   id="email"
                   name="email"
                   type="email"
-                  value={newContact.email}
+                  value={newClient.email}
                   onChange={handleInputChange}
                   required
                 />
@@ -147,7 +171,7 @@ const AddContact = () => {
                 <Input
                   id="phone"
                   name="phone"
-                  value={newContact.phone}
+                  value={newClient.phone}
                   onChange={handleInputChange}
                 />
               </div>
@@ -160,18 +184,18 @@ const AddContact = () => {
                 <Input
                   id="address"
                   name="address"
-                  value={newContact.address}
+                  value={newClient.address}
                   onChange={handleInputChange}
                 />
               </div>
             </div>
             
             <div className="flex justify-end space-x-2">
-              <Button variant="outline" type="button" onClick={() => navigate("/contacts")}>
+              <Button variant="outline" type="button" onClick={() => navigate("/clients")}>
                 Annuler
               </Button>
               <Button type="submit">
-                Ajouter le contact
+                Ajouter le client
               </Button>
             </div>
           </form>
@@ -181,4 +205,4 @@ const AddContact = () => {
   );
 };
 
-export default AddContact;
+export default AddClient;

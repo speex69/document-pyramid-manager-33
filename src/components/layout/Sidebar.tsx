@@ -32,10 +32,10 @@ export function Sidebar({ className }: SidebarProps) {
       id: "dashboard"
     },
     {
-      name: "Contacts",
-      path: "/contacts",
+      name: "Clients",
+      path: "/clients",
       icon: <Users className="w-5 h-5" />,
-      id: "contacts"
+      id: "clients"
     },
     {
       name: "Documents Pyramides",

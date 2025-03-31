@@ -16,7 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-interface Contact {
+interface Client {
   id: string;
   name: string;
   role: string;
@@ -26,11 +26,11 @@ interface Contact {
   address: string;
 }
 
-const ContactDetail = () => {
-  const { contactId } = useParams<{ contactId: string }>();
-  const [contact, setContact] = useState<Contact | null>(null);
+const ClientDetail = () => {
+  const { clientId } = useParams<{ clientId: string }>();
+  const [client, setClient] = useState<Client | null>(null);
   const [editMode, setEditMode] = useState(false);
-  const [editedContact, setEditedContact] = useState<Contact | null>(null);
+  const [editedClient, setEditedClient] = useState<Client | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const { toast } = useToast();
@@ -40,8 +40,8 @@ const ContactDetail = () => {
     const role = localStorage.getItem("userRole");
     setUserRole(role);
     
-    // Combine initial contacts with those from localStorage
-    const initialContacts: Contact[] = [
+    // Combine initial clients with those from localStorage
+    const initialClients: Client[] = [
       {
         id: "1",
         name: "Sophie Martin",
@@ -71,39 +71,39 @@ const ContactDetail = () => {
       }
     ];
     
-    const savedContacts = localStorage.getItem("contacts");
-    let allContacts = [...initialContacts];
+    const savedClients = localStorage.getItem("clients");
+    let allClients = [...initialClients];
     
-    if (savedContacts) {
+    if (savedClients) {
       try {
-        const parsedContacts = JSON.parse(savedContacts);
-        allContacts = [...initialContacts, ...parsedContacts];
+        const parsedClients = JSON.parse(savedClients);
+        allClients = [...initialClients, ...parsedClients];
       } catch (e) {
-        console.error("Error loading contacts from localStorage", e);
+        console.error("Error loading clients from localStorage", e);
       }
     }
     
-    // Find the contact with the matching ID
-    const foundContact = allContacts.find(c => c.id === contactId) || null;
-    setContact(foundContact);
-    setEditedContact(foundContact ? { ...foundContact } : null);
+    // Find the client with the matching ID
+    const foundClient = allClients.find(c => c.id === clientId) || null;
+    setClient(foundClient);
+    setEditedClient(foundClient ? { ...foundClient } : null);
     
-  }, [contactId]);
+  }, [clientId]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!editedContact) return;
+    if (!editedClient) return;
     
     const { name, value } = e.target;
-    setEditedContact(prev => {
+    setEditedClient(prev => {
       if (!prev) return prev;
       return { ...prev, [name]: value };
     });
   };
 
   const handleSave = () => {
-    if (!editedContact) return;
+    if (!editedClient) return;
     
-    if (!editedContact.name || !editedContact.email) {
+    if (!editedClient.name || !editedClient.email) {
       toast({
         variant: "destructive",
         title: "Erreur",
@@ -112,8 +112,8 @@ const ContactDetail = () => {
       return;
     }
     
-    // Get all contacts from localStorage
-    const initialContacts: Contact[] = [
+    // Get all clients from localStorage
+    const initialClients: Client[] = [
       {
         id: "1",
         name: "Sophie Martin",
@@ -143,112 +143,112 @@ const ContactDetail = () => {
       }
     ];
     
-    const savedContactsString = localStorage.getItem("contacts");
-    let savedContacts: Contact[] = [];
+    const savedClientsString = localStorage.getItem("clients");
+    let savedClients: Client[] = [];
     
-    if (savedContactsString) {
+    if (savedClientsString) {
       try {
-        savedContacts = JSON.parse(savedContactsString);
+        savedClients = JSON.parse(savedClientsString);
       } catch (e) {
-        console.error("Error parsing contacts from localStorage", e);
+        console.error("Error parsing clients from localStorage", e);
       }
     }
     
-    // Check if we're editing a default contact or a saved one
-    const isInitialContact = initialContacts.some(c => c.id === editedContact.id);
+    // Check if we're editing a default client or a saved one
+    const isInitialClient = initialClients.some(c => c.id === editedClient.id);
     
-    if (isInitialContact) {
-      // For initial contacts, add the modified contact to localStorage
-      const exists = savedContacts.some(c => c.id === editedContact.id);
+    if (isInitialClient) {
+      // For initial clients, add the modified client to localStorage
+      const exists = savedClients.some(c => c.id === editedClient.id);
       
       if (exists) {
         // Update existing override
-        savedContacts = savedContacts.map(c => 
-          c.id === editedContact.id ? editedContact : c
+        savedClients = savedClients.map(c => 
+          c.id === editedClient.id ? editedClient : c
         );
       } else {
         // Add new override
-        savedContacts.push(editedContact);
+        savedClients.push(editedClient);
       }
     } else {
-      // For saved contacts, update the saved contact
-      savedContacts = savedContacts.map(c => 
-        c.id === editedContact.id ? editedContact : c
+      // For saved clients, update the saved client
+      savedClients = savedClients.map(c => 
+        c.id === editedClient.id ? editedClient : c
       );
     }
     
     // Save back to localStorage
-    localStorage.setItem("contacts", JSON.stringify(savedContacts));
+    localStorage.setItem("clients", JSON.stringify(savedClients));
     
     // Update state
-    setContact(editedContact);
+    setClient(editedClient);
     setEditMode(false);
     
     toast({
-      title: "Contact modifié",
+      title: "Client modifié",
       description: "Les modifications ont été enregistrées.",
     });
   };
 
   const handleCancelEdit = () => {
-    if (contact) {
-      setEditedContact({ ...contact });
+    if (client) {
+      setEditedClient({ ...client });
     }
     setEditMode(false);
   };
 
   const handleDelete = () => {
-    if (!contact) return;
+    if (!client) return;
     
-    // Get all contacts from localStorage
-    const initialContacts = [
+    // Get all clients from localStorage
+    const initialClients = [
       { id: "1" }, { id: "2" }, { id: "3" }
     ];
     
-    const isInitialContact = initialContacts.some(c => c.id === contact.id);
-    const savedContactsString = localStorage.getItem("contacts");
-    let savedContacts: Contact[] = [];
+    const isInitialClient = initialClients.some(c => c.id === client.id);
+    const savedClientsString = localStorage.getItem("clients");
+    let savedClients: Client[] = [];
     
-    if (savedContactsString) {
+    if (savedClientsString) {
       try {
-        savedContacts = JSON.parse(savedContactsString);
+        savedClients = JSON.parse(savedClientsString);
       } catch (e) {
-        console.error("Error parsing contacts from localStorage", e);
+        console.error("Error parsing clients from localStorage", e);
       }
     }
     
     // Update localStorage
-    savedContacts = savedContacts.filter(c => c.id !== contact.id);
-    localStorage.setItem("contacts", JSON.stringify(savedContacts));
+    savedClients = savedClients.filter(c => c.id !== client.id);
+    localStorage.setItem("clients", JSON.stringify(savedClients));
     
     setIsDeleteDialogOpen(false);
     
     toast({
-      title: "Contact supprimé",
-      description: `${contact.name} a été supprimé.`,
+      title: "Client supprimé",
+      description: `${client.name} a été supprimé.`,
     });
     
-    // Navigate back to the contacts list
-    navigate("/contacts");
+    // Navigate back to the clients list
+    navigate("/clients");
   };
   
   const handleAccessClientSpace = () => {
-    if (!contact) return;
+    if (!client) return;
     
     toast({
       title: "Accès à l'espace client",
-      description: `Redirection vers l'espace client de ${contact.name}.`,
+      description: `Redirection vers l'espace client de ${client.name}.`,
     });
   };
   
-  if (!contact) {
+  if (!client) {
     return (
       <div className="flex justify-center items-center h-[calc(100vh-150px)]">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">Contact non trouvé</h2>
-          <p className="text-muted-foreground mb-4">Le contact demandé n'existe pas ou a été supprimé.</p>
-          <Button onClick={() => navigate("/contacts")}>
-            <ArrowLeft className="mr-2 h-4 w-4" /> Retour aux contacts
+          <h2 className="text-2xl font-bold mb-2">Client non trouvé</h2>
+          <p className="text-muted-foreground mb-4">Le client demandé n'existe pas ou a été supprimé.</p>
+          <Button onClick={() => navigate("/clients")}>
+            <ArrowLeft className="mr-2 h-4 w-4" /> Retour aux clients
           </Button>
         </div>
       </div>
@@ -261,21 +261,21 @@ const ContactDetail = () => {
         <Button 
           variant="ghost" 
           size="icon" 
-          onClick={() => navigate("/contacts")}
+          onClick={() => navigate("/clients")}
           className="mr-2"
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">{contact.name}</h2>
-          <p className="text-muted-foreground">{contact.role} - {contact.company}</p>
+          <h2 className="text-3xl font-bold tracking-tight">{client.name}</h2>
+          <p className="text-muted-foreground">{client.role} - {client.company}</p>
         </div>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex justify-between">
-            <span>Informations du contact</span>
+            <span>Informations du client</span>
             <div className="flex space-x-2">
               {userRole === "admin" && (
                 <>
@@ -322,7 +322,7 @@ const ContactDetail = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {editMode && editedContact ? (
+          {editMode && editedClient ? (
             <form className="space-y-6">
               <div className="space-y-4">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -334,7 +334,7 @@ const ContactDetail = () => {
                     <Input
                       id="name"
                       name="name"
-                      value={editedContact.name}
+                      value={editedClient.name}
                       onChange={handleInputChange}
                       required
                     />
@@ -347,7 +347,7 @@ const ContactDetail = () => {
                     <Input
                       id="role"
                       name="role"
-                      value={editedContact.role}
+                      value={editedClient.role}
                       onChange={handleInputChange}
                     />
                   </div>
@@ -361,7 +361,7 @@ const ContactDetail = () => {
                   <Input
                     id="company"
                     name="company"
-                    value={editedContact.company}
+                    value={editedClient.company}
                     onChange={handleInputChange}
                   />
                 </div>
@@ -375,7 +375,7 @@ const ContactDetail = () => {
                     id="email"
                     name="email"
                     type="email"
-                    value={editedContact.email}
+                    value={editedClient.email}
                     onChange={handleInputChange}
                     required
                   />
@@ -389,7 +389,7 @@ const ContactDetail = () => {
                   <Input
                     id="phone"
                     name="phone"
-                    value={editedContact.phone}
+                    value={editedClient.phone}
                     onChange={handleInputChange}
                   />
                 </div>
@@ -402,7 +402,7 @@ const ContactDetail = () => {
                   <Input
                     id="address"
                     name="address"
-                    value={editedContact.address}
+                    value={editedClient.address}
                     onChange={handleInputChange}
                   />
                 </div>
@@ -413,41 +413,41 @@ const ContactDetail = () => {
               <div className="grid grid-cols-[24px_1fr] items-center gap-x-4 gap-y-6">
                 <User className="h-5 w-5 text-muted-foreground" />
                 <div>
-                  <div className="font-medium">{contact.name}</div>
+                  <div className="font-medium">{client.name}</div>
                   <div className="text-sm text-muted-foreground">Nom</div>
                 </div>
                 
                 <User className="h-5 w-5 text-muted-foreground" />
                 <div>
-                  <div className="font-medium">{contact.role || "Non spécifié"}</div>
+                  <div className="font-medium">{client.role || "Non spécifié"}</div>
                   <div className="text-sm text-muted-foreground">Fonction</div>
                 </div>
                 
                 <Building className="h-5 w-5 text-muted-foreground" />
                 <div>
-                  <div className="font-medium">{contact.company || "Non spécifié"}</div>
+                  <div className="font-medium">{client.company || "Non spécifié"}</div>
                   <div className="text-sm text-muted-foreground">Société</div>
                 </div>
                 
                 <Mail className="h-5 w-5 text-muted-foreground" />
                 <div>
-                  <a href={`mailto:${contact.email}`} className="font-medium text-blue-600 hover:underline">
-                    {contact.email}
+                  <a href={`mailto:${client.email}`} className="font-medium text-blue-600 hover:underline">
+                    {client.email}
                   </a>
                   <div className="text-sm text-muted-foreground">Email</div>
                 </div>
                 
                 <Phone className="h-5 w-5 text-muted-foreground" />
                 <div>
-                  <a href={`tel:${contact.phone}`} className="font-medium text-blue-600 hover:underline">
-                    {contact.phone || "Non spécifié"}
+                  <a href={`tel:${client.phone}`} className="font-medium text-blue-600 hover:underline">
+                    {client.phone || "Non spécifié"}
                   </a>
                   <div className="text-sm text-muted-foreground">Téléphone</div>
                 </div>
                 
                 <MapPin className="h-5 w-5 text-muted-foreground" />
                 <div>
-                  <div className="font-medium">{contact.address || "Non spécifié"}</div>
+                  <div className="font-medium">{client.address || "Non spécifié"}</div>
                   <div className="text-sm text-muted-foreground">Adresse</div>
                 </div>
               </div>
@@ -462,7 +462,7 @@ const ContactDetail = () => {
           <DialogHeader>
             <DialogTitle>Confirmer la suppression</DialogTitle>
             <DialogDescription>
-              Êtes-vous sûr de vouloir supprimer ce contact ? Cette action ne peut pas être annulée.
+              Êtes-vous sûr de vouloir supprimer ce client ? Cette action ne peut pas être annulée.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
@@ -479,4 +479,4 @@ const ContactDetail = () => {
   );
 };
 
-export default ContactDetail;
+export default ClientDetail;
