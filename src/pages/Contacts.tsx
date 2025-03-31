@@ -1,9 +1,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Phone, Mail, MapPin, Building, Trash, Edit, ExternalLink } from "lucide-react";
+import { User, Phone, Mail, MapPin, Building, Trash, Edit, ExternalLink, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
@@ -58,32 +58,29 @@ const initialContacts: Contact[] = [
 const Contacts = () => {
   const [contacts, setContacts] = useState<Contact[]>(initialContacts);
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [newContact, setNewContact] = useState<Omit<Contact, "id">>({
-    name: "",
-    role: "",
-    company: "",
-    email: "",
-    phone: "",
-    address: ""
-  });
-  const { toast } = useToast();
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentContact, setCurrentContact] = useState<Contact | null>(null);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
     const role = localStorage.getItem("userRole");
     setUserRole(role);
+    
+    // Load contacts from localStorage if available
+    const savedContacts = localStorage.getItem("contacts");
+    if (savedContacts) {
+      try {
+        const parsedContacts = JSON.parse(savedContacts);
+        setContacts([...initialContacts, ...parsedContacts]);
+      } catch (e) {
+        console.error("Error loading contacts from localStorage", e);
+      }
+    }
   }, []);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setNewContact(prev => ({ ...prev, [name]: value }));
-  };
 
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!editingContact) return;
@@ -92,38 +89,6 @@ const Contacts = () => {
     setEditingContact(prev => {
       if (!prev) return prev;
       return { ...prev, [name]: value };
-    });
-  };
-
-  const handleAddContact = () => {
-    if (!newContact.name || !newContact.email) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Le nom et l'email sont obligatoires.",
-      });
-      return;
-    }
-
-    const contact: Contact = {
-      id: `${Date.now()}`,
-      ...newContact
-    };
-    
-    setContacts([...contacts, contact]);
-    setNewContact({
-      name: "",
-      role: "",
-      company: "",
-      email: "",
-      phone: "",
-      address: ""
-    });
-    
-    setIsAddDialogOpen(false);
-    toast({
-      title: "Contact ajouté",
-      description: `${contact.name} a été ajouté avec succès.`,
     });
   };
 
@@ -149,7 +114,15 @@ const Contacts = () => {
       return;
     }
     
-    setContacts(contacts.map(c => c.id === editingContact.id ? editingContact : c));
+    const updatedContacts = contacts.map(c => c.id === editingContact.id ? editingContact : c);
+    setContacts(updatedContacts);
+    
+    // Update localStorage
+    const storedContacts = updatedContacts.filter(contact => 
+      !initialContacts.some(initialContact => initialContact.id === contact.id)
+    );
+    localStorage.setItem("contacts", JSON.stringify(storedContacts));
+    
     setIsEditDialogOpen(false);
     
     toast({
@@ -166,7 +139,15 @@ const Contacts = () => {
   const handleDeleteContact = () => {
     if (!currentContact) return;
     
-    setContacts(contacts.filter(c => c.id !== currentContact.id));
+    const updatedContacts = contacts.filter(c => c.id !== currentContact.id);
+    setContacts(updatedContacts);
+    
+    // Update localStorage
+    const storedContacts = updatedContacts.filter(contact => 
+      !initialContacts.some(initialContact => initialContact.id === contact.id)
+    );
+    localStorage.setItem("contacts", JSON.stringify(storedContacts));
+    
     setIsDeleteDialogOpen(false);
     
     toast({
@@ -197,99 +178,9 @@ const Contacts = () => {
         </div>
         
         {userRole === "admin" && (
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>Ajouter un contact</Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Ajouter un nouveau contact</DialogTitle>
-                <DialogDescription>
-                  Remplissez les informations du nouveau contact.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">
-                    Nom
-                  </Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    value={newContact.name}
-                    onChange={handleInputChange}
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="role" className="text-right">
-                    Fonction
-                  </Label>
-                  <Input
-                    id="role"
-                    name="role"
-                    value={newContact.role}
-                    onChange={handleInputChange}
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="company" className="text-right">
-                    Société
-                  </Label>
-                  <Input
-                    id="company"
-                    name="company"
-                    value={newContact.company}
-                    onChange={handleInputChange}
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="email" className="text-right">
-                    Email
-                  </Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={newContact.email}
-                    onChange={handleInputChange}
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="phone" className="text-right">
-                    Téléphone
-                  </Label>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    value={newContact.phone}
-                    onChange={handleInputChange}
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="address" className="text-right">
-                    Adresse
-                  </Label>
-                  <Input
-                    id="address"
-                    name="address"
-                    value={newContact.address}
-                    onChange={handleInputChange}
-                    className="col-span-3"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button onClick={handleAddContact}>
-                  Ajouter
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button onClick={() => navigate("/contacts/add")}>
+            <Plus className="mr-2 h-4 w-4" /> Ajouter un contact
+          </Button>
         )}
       </div>
       
