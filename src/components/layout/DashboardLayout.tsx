@@ -4,6 +4,7 @@ import { Navigate, Outlet } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
+import { UserProfile } from "./UserProfile";
 
 const DashboardLayout = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -38,8 +39,11 @@ const DashboardLayout = () => {
       <div className="hidden md:flex h-full w-64 flex-col fixed inset-y-0">
         <Sidebar />
       </div>
-      <div className="md:pl-64 flex-1 overflow-y-auto">
-        <main className="p-6">
+      <div className="md:pl-64 flex-1 overflow-y-auto flex flex-col">
+        <header className="sticky top-0 z-10 bg-background border-b h-14 flex items-center justify-end px-6 shadow-sm">
+          <UserProfile />
+        </header>
+        <main className="p-6 flex-grow">
           <Outlet />
         </main>
       </div>
