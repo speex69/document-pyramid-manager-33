@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { ArrowLeft, User, Mail, Phone, MapPin, Building, Save, Trash, ExternalLink } from "lucide-react";
+import { ArrowLeft, User, Mail, Phone, MapPin, Building, Save, Trash, ExternalLink, Edit } from "lucide-react";
 import {
   Dialog,
   DialogContent,
