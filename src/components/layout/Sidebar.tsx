@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
 import { Home, Users, FileText, FolderOpen, UserCircle } from "lucide-react";
+import { Logo } from "./Logo";
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -74,9 +74,9 @@ export function Sidebar({ className }: SidebarProps) {
     <div className={cn("pb-12 h-full bg-sidebar", className)}>
       <div className="space-y-4 py-4">
         <div className="px-4 py-2">
-          <h2 className="mb-2 px-2 text-lg font-semibold tracking-tight text-sidebar-foreground">
-            Portail Client
-          </h2>
+          <div className="mb-2 px-2">
+            <Logo size="md" />
+          </div>
           <div className="space-y-1">
             {menuItems.map((item) => (
               <Button
