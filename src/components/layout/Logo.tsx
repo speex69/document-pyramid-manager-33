@@ -8,6 +8,9 @@ interface LogoProps {
 export function Logo({ size = "md" }: LogoProps) {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  
+  // Default logo image (fictitious)
+  const defaultLogoUrl = "/logo-default.svg"; 
 
   useEffect(() => {
     // Load custom logo if available
@@ -48,16 +51,23 @@ export function Logo({ size = "md" }: LogoProps) {
       onClick={handleLogoClick}
       title={isAdmin ? "Cliquez pour modifier le logo" : ""}
     >
-      {logoUrl ? (
-        <img 
-          src={logoUrl} 
-          alt="Logo" 
-          className={`${sizeClasses[size]} max-w-full`} 
-          onError={() => setLogoUrl(null)} // Reset on error loading
-        />
-      ) : (
-        <span className="font-semibold text-lg text-sidebar-foreground">Portail Client</span>
-      )}
+      <img 
+        src={logoUrl || defaultLogoUrl} 
+        alt="Logo" 
+        className={`${sizeClasses[size]} max-w-full`} 
+        onError={(e) => {
+          // If custom logo fails to load, fall back to default logo
+          const target = e.target as HTMLImageElement;
+          if (target.src !== defaultLogoUrl) {
+            target.src = defaultLogoUrl;
+            // Also clear the stored URL since it's invalid
+            if (logoUrl) {
+              localStorage.removeItem("customLogoUrl");
+              setLogoUrl(null);
+            }
+          }
+        }} 
+      />
       {isAdmin && (
         <span className="text-xs text-sidebar-foreground/50 ml-1">(Modifiable)</span>
       )}
