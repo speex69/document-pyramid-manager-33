@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Folder, File, Plus, Search, Upload, SlidersHorizontal, ChevronDown, Trash2, Eye } from "lucide-react";
+import { Folder, File, Plus, Search, Upload, SlidersHorizontal, ChevronDown, Trash2, Eye, LayoutGrid, LayoutList } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type FileType = {
   id: string;
@@ -42,6 +44,8 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
   
   const [previewFile, setPreviewFile] = useState<FileType | null>(null);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   useEffect(() => {
     const role = localStorage.getItem("userRole");
@@ -211,6 +215,12 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
     }
   };
 
+  const toggleViewMode = (value: string) => {
+    if (value === "grid" || value === "list") {
+      setViewMode(value);
+    }
+  };
+
   return (
     <Card className="w-full">
       <CardHeader className="border-b">
@@ -260,6 +270,15 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            
+            <ToggleGroup type="single" value={viewMode} onValueChange={toggleViewMode}>
+              <ToggleGroupItem value="grid" aria-label="Affichage en grille" title="Affichage en grille">
+                <LayoutGrid className="h-4 w-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="list" aria-label="Affichage en liste" title="Affichage en liste">
+                <LayoutList className="h-4 w-4" />
+              </ToggleGroupItem>
+            </ToggleGroup>
           </div>
         </div>
       </CardHeader>
@@ -330,7 +349,7 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
               ? "Aucun résultat trouvé"
               : "Ce dossier est vide"}
           </div>
-        ) : (
+        ) : viewMode === "grid" ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {sortedFiles.map((file) => (
               <ContextMenu key={file.id}>
@@ -380,6 +399,72 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
               </ContextMenu>
             ))}
           </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-12"></TableHead>
+                <TableHead>Nom</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead className="w-24 text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedFiles.map((file) => (
+                <TableRow key={file.id}>
+                  <TableCell>
+                    {file.type === "folder" ? (
+                      <Folder className="h-5 w-5 text-pyramide" />
+                    ) : (
+                      <File className="h-5 w-5 text-pyramide" />
+                    )}
+                  </TableCell>
+                  <TableCell
+                    className="font-medium cursor-pointer"
+                    onClick={() => 
+                      file.type === "folder" 
+                        ? navigateToFolder(file.id, file.name) 
+                        : handlePreview(file)
+                    }
+                  >
+                    {file.name}
+                  </TableCell>
+                  <TableCell>{file.type === "folder" ? "Dossier" : "Fichier"}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      {file.type === "folder" ? (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => navigateToFolder(file.id, file.name)}
+                        >
+                          <Folder className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handlePreview(file)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {(isEditable || userRole === "admin") && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => handleDelete(file)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
       </CardContent>
       
