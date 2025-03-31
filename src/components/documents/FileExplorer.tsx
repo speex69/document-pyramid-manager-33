@@ -15,14 +15,7 @@ import {
   Trash2, 
   Eye, 
   LayoutGrid, 
-  LayoutList,
-  FolderArchive,
-  FolderClosed,
-  FolderOpen,
-  FolderPlus,
-  FolderSync,
-  FolderKey,
-  FolderLock
+  LayoutList
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -45,14 +38,10 @@ type FileExplorerProps = {
   initialFiles?: FileType[];
 };
 
-const folderColors = {
-  red: "text-red-500",
-};
-
 const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProps) => {
   const processedInitialFiles = initialFiles.map(file => {
     if (file.type === "folder") {
-      return { ...file, color: "red", icon: "folder" };
+      return { ...file, color: "red" };
     }
     return file;
   });
@@ -136,7 +125,6 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
       type: "folder",
       parentId: currentFolder,
       color: "red",
-      icon: "folder",
     };
 
     setFiles([...files, newFolder]);
