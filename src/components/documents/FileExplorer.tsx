@@ -46,39 +46,13 @@ type FileExplorerProps = {
 };
 
 const folderColors = {
-  blue: "text-blue-500",
-  green: "text-green-500",
   red: "text-red-500",
-  yellow: "text-yellow-500",
-  purple: "text-purple-500",
-  orange: "text-orange-500",
-  teal: "text-teal-500",
-  indigo: "text-indigo-500",
-  pink: "text-pink-500",
-  primary: "text-pyramide"
-};
-
-const folderIcons = {
-  default: "folder",
-  archive: "folder-archive",
-  closed: "folder-closed",
-  open: "folder-open",
-  plus: "folder-plus",
-  sync: "folder-sync", 
-  key: "folder-key",
-  lock: "folder-lock"
 };
 
 const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProps) => {
   const processedInitialFiles = initialFiles.map(file => {
-    if (file.type === "folder" && !file.color) {
-      const colorKeys = Object.keys(folderColors);
-      const randomColor = colorKeys[Math.floor(Math.random() * colorKeys.length)];
-      
-      const iconKeys = Object.keys(folderIcons);
-      const randomIcon = iconKeys[Math.floor(Math.random() * iconKeys.length)];
-      
-      return { ...file, color: randomColor, icon: randomIcon };
+    if (file.type === "folder") {
+      return { ...file, color: "red", icon: "folder" };
     }
     return file;
   });
@@ -104,9 +78,6 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  
-  const [newFolderColor, setNewFolderColor] = useState<string>("primary");
-  const [newFolderIcon, setNewFolderIcon] = useState<string>("default");
 
   useEffect(() => {
     const role = localStorage.getItem("userRole");
@@ -164,8 +135,8 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
       name: newFolderName,
       type: "folder",
       parentId: currentFolder,
-      color: newFolderColor,
-      icon: newFolderIcon,
+      color: "red",
+      icon: "folder",
     };
 
     setFiles([...files, newFolder]);
@@ -289,16 +260,7 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
       return <File className="file-icon" />;
     }
     
-    switch(file.icon) {
-      case "folder-archive": return <FolderArchive className={`folder-icon ${file.color ? folderColors[file.color as keyof typeof folderColors] : folderColors.primary}`} />;
-      case "folder-closed": return <FolderClosed className={`folder-icon ${file.color ? folderColors[file.color as keyof typeof folderColors] : folderColors.primary}`} />;
-      case "folder-open": return <FolderOpen className={`folder-icon ${file.color ? folderColors[file.color as keyof typeof folderColors] : folderColors.primary}`} />;
-      case "folder-plus": return <FolderPlus className={`folder-icon ${file.color ? folderColors[file.color as keyof typeof folderColors] : folderColors.primary}`} />;
-      case "folder-sync": return <FolderSync className={`folder-icon ${file.color ? folderColors[file.color as keyof typeof folderColors] : folderColors.primary}`} />;
-      case "folder-key": return <FolderKey className={`folder-icon ${file.color ? folderColors[file.color as keyof typeof folderColors] : folderColors.primary}`} />;
-      case "folder-lock": return <FolderLock className={`folder-icon ${file.color ? folderColors[file.color as keyof typeof folderColors] : folderColors.primary}`} />;
-      default: return <Folder className={`folder-icon ${file.color ? folderColors[file.color as keyof typeof folderColors] : folderColors.primary}`} />;
-    }
+    return <Folder className="folder-icon text-red-500" />;
   };
 
   return (
@@ -400,95 +362,6 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
                       onChange={(e) => setNewFolderName(e.target.value)}
                     />
                   </div>
-                  
-                  <div>
-                    <h3 className="mb-2 font-medium">Couleur du dossier</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {Object.entries(folderColors).map(([colorName, className]) => (
-                        <Button 
-                          key={colorName}
-                          type="button"
-                          variant={newFolderColor === colorName ? "secondary" : "outline"}
-                          className={`w-8 h-8 p-0 ${className}`}
-                          onClick={() => setNewFolderColor(colorName)}
-                          title={colorName}
-                        >
-                          {newFolderColor === colorName && <div className="w-2 h-2 rounded-full bg-current"></div>}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h3 className="mb-2 font-medium">Style du dossier</h3>
-                    <div className="grid grid-cols-4 gap-2">
-                      <Button
-                        type="button"
-                        variant={newFolderIcon === "default" ? "secondary" : "outline"}
-                        className="p-2"
-                        onClick={() => setNewFolderIcon("default")}
-                      >
-                        <Folder className={`w-5 h-5 ${folderColors[newFolderColor as keyof typeof folderColors]}`} />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={newFolderIcon === "folder-archive" ? "secondary" : "outline"}
-                        className="p-2"
-                        onClick={() => setNewFolderIcon("folder-archive")}
-                      >
-                        <FolderArchive className={`w-5 h-5 ${folderColors[newFolderColor as keyof typeof folderColors]}`} />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={newFolderIcon === "folder-closed" ? "secondary" : "outline"}
-                        className="p-2"
-                        onClick={() => setNewFolderIcon("folder-closed")}
-                      >
-                        <FolderClosed className={`w-5 h-5 ${folderColors[newFolderColor as keyof typeof folderColors]}`} />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={newFolderIcon === "folder-open" ? "secondary" : "outline"}
-                        className="p-2"
-                        onClick={() => setNewFolderIcon("folder-open")}
-                      >
-                        <FolderOpen className={`w-5 h-5 ${folderColors[newFolderColor as keyof typeof folderColors]}`} />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={newFolderIcon === "folder-plus" ? "secondary" : "outline"}
-                        className="p-2"
-                        onClick={() => setNewFolderIcon("folder-plus")}
-                      >
-                        <FolderPlus className={`w-5 h-5 ${folderColors[newFolderColor as keyof typeof folderColors]}`} />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={newFolderIcon === "folder-sync" ? "secondary" : "outline"}
-                        className="p-2"
-                        onClick={() => setNewFolderIcon("folder-sync")}
-                      >
-                        <FolderSync className={`w-5 h-5 ${folderColors[newFolderColor as keyof typeof folderColors]}`} />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={newFolderIcon === "folder-key" ? "secondary" : "outline"}
-                        className="p-2"
-                        onClick={() => setNewFolderIcon("folder-key")}
-                      >
-                        <FolderKey className={`w-5 h-5 ${folderColors[newFolderColor as keyof typeof folderColors]}`} />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={newFolderIcon === "folder-lock" ? "secondary" : "outline"}
-                        className="p-2"
-                        onClick={() => setNewFolderIcon("folder-lock")}
-                      >
-                        <FolderLock className={`w-5 h-5 ${folderColors[newFolderColor as keyof typeof folderColors]}`} />
-                      </Button>
-                    </div>
-                  </div>
-                  
                   <Button onClick={handleCreateFolder}>Créer</Button>
                 </div>
               </DialogContent>
