@@ -18,7 +18,8 @@ import {
   LayoutList,
   ArrowDownAZ,
   ArrowUpAZ,
-  CalendarRange
+  CalendarRange,
+  Download
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -33,6 +34,8 @@ type FileType = {
   parentId: string | null;
   color?: string;
   icon?: string;
+  date?: string;
+  clientId?: string;
 };
 
 type FileExplorerProps = {
@@ -70,9 +73,8 @@ const FileExplorer = ({ title, isEditable, initialFiles = [], enableDragAndDrop 
   const [previewFile, setPreviewFile] = useState<FileType | null>(null);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   
-  // Drag and drop states
   const [draggedItem, setDraggedItem] = useState<FileType | null>(null);
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
@@ -172,6 +174,7 @@ const FileExplorer = ({ title, isEditable, initialFiles = [], enableDragAndDrop 
       name: file.name,
       type: "file",
       parentId: currentFolder,
+      date: new Date().toISOString().split('T')[0]
     }));
 
     setFiles([...files, ...newFiles]);
@@ -252,6 +255,45 @@ const FileExplorer = ({ title, isEditable, initialFiles = [], enableDragAndDrop 
     
     setShowDeleteDialog(false);
     setFileToDelete(null);
+  };
+
+  const handleDownload = (file: FileType) => {
+    if (file.type === "file") {
+      const dummyContent = `This is a simulation of the content of the file: ${file.name}`;
+      const blob = new Blob([dummyContent], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Téléchargement démarré",
+        description: `Le fichier "${file.name}" est en cours de téléchargement.`,
+      });
+    } else if (file.type === "folder") {
+      const downloadFolderContent = (folderId: string) => {
+        const folderFiles = files.filter(f => f.parentId === folderId);
+        if (folderFiles.length === 0) {
+          toast({
+            title: "Dossier vide",
+            description: `Le dossier "${file.name}" ne contient aucun fichier.`,
+          });
+          return;
+        }
+        
+        toast({
+          title: "Téléchargement démarré",
+          description: `Le dossier "${file.name}" est en cours de téléchargement sous forme d'archive.`,
+        });
+      };
+      
+      downloadFolderContent(file.id);
+    }
   };
 
   const handlePreview = (file: FileType) => {
@@ -478,6 +520,12 @@ const FileExplorer = ({ title, isEditable, initialFiles = [], enableDragAndDrop 
                     <Eye className="h-4 w-4" /> Aperçu
                   </ContextMenuItem>
                 )}
+                <ContextMenuItem 
+                  onClick={() => handleDownload(file)}
+                  className="flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" /> Télécharger
+                </ContextMenuItem>
                 {(isEditable || userRole === "admin") && (
                   <ContextMenuItem 
                     onClick={() => handleDelete(file)}
@@ -505,7 +553,8 @@ const FileExplorer = ({ title, isEditable, initialFiles = [], enableDragAndDrop 
                 <TableHead className="w-12"></TableHead>
                 <TableHead>Nom</TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead className="w-24 text-right">Actions</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead className="w-36 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -537,6 +586,7 @@ const FileExplorer = ({ title, isEditable, initialFiles = [], enableDragAndDrop 
                     {file.name}
                   </TableCell>
                   <TableCell>{file.type === "folder" ? "Dossier" : "Fichier"}</TableCell>
+                  <TableCell>{file.date || "-"}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                       {file.type === "folder" ? (
@@ -556,6 +606,13 @@ const FileExplorer = ({ title, isEditable, initialFiles = [], enableDragAndDrop 
                           <Eye className="h-4 w-4" />
                         </Button>
                       )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDownload(file)}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
                       {(isEditable || userRole === "admin") && (
                         <Button
                           variant="ghost"
