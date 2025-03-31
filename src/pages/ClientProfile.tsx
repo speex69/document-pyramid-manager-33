@@ -1,19 +1,11 @@
-import { useState, useEffect, useLayoutEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { ArrowLeft, User, Mail, Phone, MapPin, Building, Save, Trash, ExternalLink, Edit } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { User, Mail, Phone, MapPin, Building, Save } from "lucide-react";
 
 interface Client {
   id: string;
@@ -25,34 +17,25 @@ interface Client {
   address: string;
 }
 
-const ClientDetail = () => {
-  const { clientId } = useParams<{ clientId: string }>();
+const ClientProfile = () => {
   const [client, setClient] = useState<Client | null>(null);
-  const [editMode, setEditMode] = useState(false);
   const [editedClient, setEditedClient] = useState<Client | null>(null);
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const { toast } = useToast();
-  const navigate = useNavigate();
-
-  useLayoutEffect(() => {
-    const role = localStorage.getItem("userRole");
-    const loggedInClientId = localStorage.getItem("clientId");
+  
+  useEffect(() => {
+    // Récupérer l'ID du client actuellement connecté
+    const clientId = localStorage.getItem("clientId");
     
-    if (role !== "admin" && loggedInClientId !== clientId) {
+    if (!clientId) {
       toast({
         variant: "destructive",
-        title: "Accès refusé",
-        description: "Vous n'avez pas l'autorisation d'accéder à cette page.",
+        title: "Erreur",
+        description: "Impossible de récupérer votre profil.",
       });
-      navigate("/profile", { replace: true });
+      return;
     }
-  }, [clientId, navigate, toast]);
-
-  useEffect(() => {
-    const role = localStorage.getItem("userRole");
-    setUserRole(role);
     
+    // Combine initial clients with those from localStorage
     const initialClients: Client[] = [
       {
         id: "1",
@@ -95,11 +78,11 @@ const ClientDetail = () => {
       }
     }
     
+    // Find the client with the matching ID
     const foundClient = allClients.find(c => c.id === clientId) || null;
     setClient(foundClient);
     setEditedClient(foundClient ? { ...foundClient } : null);
-    
-  }, [clientId]);
+  }, [toast]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!editedClient) return;
@@ -123,6 +106,7 @@ const ClientDetail = () => {
       return;
     }
     
+    // Get all clients from localStorage
     const initialClients: Client[] = [
       {
         id: "1",
@@ -164,92 +148,47 @@ const ClientDetail = () => {
       }
     }
     
+    // Check if we're editing a default client or a saved one
     const isInitialClient = initialClients.some(c => c.id === editedClient.id);
     
     if (isInitialClient) {
+      // For initial clients, add the modified client to localStorage
       const exists = savedClients.some(c => c.id === editedClient.id);
       
       if (exists) {
+        // Update existing override
         savedClients = savedClients.map(c => 
           c.id === editedClient.id ? editedClient : c
         );
       } else {
+        // Add new override
         savedClients.push(editedClient);
       }
     } else {
+      // For saved clients, update the saved client
       savedClients = savedClients.map(c => 
         c.id === editedClient.id ? editedClient : c
       );
     }
     
+    // Save back to localStorage
     localStorage.setItem("clients", JSON.stringify(savedClients));
     
+    // Update state
     setClient(editedClient);
-    setEditMode(false);
     
     toast({
-      title: "Client modifié",
+      title: "Profil modifié",
       description: "Les modifications ont été enregistrées.",
     });
   };
 
-  const handleCancelEdit = () => {
-    if (client) {
-      setEditedClient({ ...client });
-    }
-    setEditMode(false);
-  };
-
-  const handleDelete = () => {
-    if (!client) return;
-    
-    const initialClients = [
-      { id: "1" }, { id: "2" }, { id: "3" }
-    ];
-    
-    const isInitialClient = initialClients.some(c => c.id === client.id);
-    const savedClientsString = localStorage.getItem("clients");
-    let savedClients: Client[] = [];
-    
-    if (savedClientsString) {
-      try {
-        savedClients = JSON.parse(savedClientsString);
-      } catch (e) {
-        console.error("Error parsing clients from localStorage", e);
-      }
-    }
-    
-    savedClients = savedClients.filter(c => c.id !== client.id);
-    localStorage.setItem("clients", JSON.stringify(savedClients));
-    
-    setIsDeleteDialogOpen(false);
-    
-    toast({
-      title: "Client supprimé",
-      description: `${client.name} a été supprimé.`,
-    });
-    
-    navigate("/clients");
-  };
-  
-  const handleAccessClientSpace = () => {
-    if (!client) return;
-    
-    toast({
-      title: "Accès à l'espace client",
-      description: `Redirection vers l'espace client de ${client.name}.`,
-    });
-  };
-  
   if (!client) {
     return (
       <div className="flex justify-center items-center h-[calc(100vh-150px)]">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">Client non trouvé</h2>
-          <p className="text-muted-foreground mb-4">Le client demandé n'existe pas ou a été supprimé.</p>
-          <Button onClick={() => navigate("/clients")}>
-            <ArrowLeft className="mr-2 h-4 w-4" /> Retour aux clients
-          </Button>
+          <h2 className="text-2xl font-bold mb-2">Profil non trouvé</h2>
+          <p className="text-muted-foreground mb-4">Impossible de récupérer votre profil.</p>
         </div>
       </div>
     );
@@ -257,72 +196,23 @@ const ClientDetail = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center mb-6">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={() => navigate("/clients")}
-          className="mr-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">{client.name}</h2>
-          <p className="text-muted-foreground">{client.role} - {client.company}</p>
-        </div>
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">Mon Profil</h2>
+        <p className="text-muted-foreground">Gérez vos informations personnelles.</p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex justify-between">
-            <span>Informations du client</span>
-            <div className="flex space-x-2">
-              {userRole === "admin" && (
-                <>
-                  {editMode ? (
-                    <>
-                      <Button 
-                        variant="ghost" 
-                        onClick={handleCancelEdit}
-                      >
-                        Annuler
-                      </Button>
-                      <Button 
-                        onClick={handleSave}
-                      >
-                        <Save className="mr-2 h-4 w-4" />
-                        Enregistrer
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => setEditMode(true)}
-                      >
-                        <Edit className="mr-2 h-4 w-4" />
-                        Modifier
-                      </Button>
-                      <Button 
-                        variant="destructive" 
-                        onClick={() => setIsDeleteDialogOpen(true)}
-                      >
-                        <Trash className="mr-2 h-4 w-4" />
-                        Supprimer
-                      </Button>
-                    </>
-                  )}
-                </>
-              )}
-              <Button onClick={handleAccessClientSpace}>
-                <ExternalLink className="mr-2 h-4 w-4" />
-                Espace client
-              </Button>
-            </div>
+            <span>Informations du profil</span>
+            <Button onClick={handleSave}>
+              <Save className="mr-2 h-4 w-4" />
+              Enregistrer
+            </Button>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {editMode && editedClient ? (
+          {editedClient && (
             <form className="space-y-6">
               <div className="space-y-4">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -408,74 +298,11 @@ const ClientDetail = () => {
                 </div>
               </div>
             </form>
-          ) : (
-            <div className="space-y-6">
-              <div className="grid grid-cols-[24px_1fr] items-center gap-x-4 gap-y-6">
-                <User className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <div className="font-medium">{client.name}</div>
-                  <div className="text-sm text-muted-foreground">Nom</div>
-                </div>
-                
-                <User className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <div className="font-medium">{client.role || "Non spécifié"}</div>
-                  <div className="text-sm text-muted-foreground">Fonction</div>
-                </div>
-                
-                <Building className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <div className="font-medium">{client.company || "Non spécifié"}</div>
-                  <div className="text-sm text-muted-foreground">Société</div>
-                </div>
-                
-                <Mail className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <a href={`mailto:${client.email}`} className="font-medium text-blue-600 hover:underline">
-                    {client.email}
-                  </a>
-                  <div className="text-sm text-muted-foreground">Email</div>
-                </div>
-                
-                <Phone className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <a href={`tel:${client.phone}`} className="font-medium text-blue-600 hover:underline">
-                    {client.phone || "Non spécifié"}
-                  </a>
-                  <div className="text-sm text-muted-foreground">Téléphone</div>
-                </div>
-                
-                <MapPin className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <div className="font-medium">{client.address || "Non spécifié"}</div>
-                  <div className="text-sm text-muted-foreground">Adresse</div>
-                </div>
-              </div>
-            </div>
           )}
         </CardContent>
       </Card>
-      
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Confirmer la suppression</DialogTitle>
-            <DialogDescription>
-              Êtes-vous sûr de vouloir supprimer ce client ? Cette action ne peut pas être annulée.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Annuler
-            </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Supprimer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
 
-export default ClientDetail;
+export default ClientProfile;

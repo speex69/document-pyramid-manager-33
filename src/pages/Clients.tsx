@@ -2,7 +2,7 @@
 import { 
   User, Phone, Mail, MapPin, Building, Trash, Edit, ExternalLink, Plus 
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -61,6 +61,21 @@ const Clients = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Vérifier l'accès avant le rendu
+  useLayoutEffect(() => {
+    const role = localStorage.getItem("userRole");
+    
+    // Si l'utilisateur est un client, rediriger vers sa page de profil
+    if (role !== "admin") {
+      const clientId = localStorage.getItem("clientId");
+      if (clientId) {
+        navigate("/profile", { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
+    }
+  }, [navigate]);
+
   useEffect(() => {
     const role = localStorage.getItem("userRole");
     setUserRole(role);
@@ -83,6 +98,11 @@ const Clients = () => {
       description: `Redirection vers l'espace client de ${client.name}.`,
     });
   };
+
+  // Si l'utilisateur n'est pas un admin, ne pas afficher la liste des clients
+  if (userRole !== "admin") {
+    return null;
+  }
 
   return (
     <div className="space-y-6">

@@ -4,52 +4,79 @@ import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Home, Users, FileText, FolderOpen, LogOut } from "lucide-react";
+import { Home, Users, FileText, FolderOpen, LogOut, UserCircle } from "lucide-react";
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export function Sidebar({ className }: SidebarProps) {
   const [activeItem, setActiveItem] = useState("");
+  const [userRole, setUserRole] = useState<string | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   
   useEffect(() => {
     const path = location.pathname.split("/")[1];
     setActiveItem(path === "" ? "dashboard" : path);
+    
+    const role = localStorage.getItem("userRole");
+    setUserRole(role);
   }, [location.pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem("userRole");
     localStorage.removeItem("isAuthenticated");
+    localStorage.removeItem("clientId");
     navigate("/login");
   };
 
-  const menuItems = [
-    {
-      name: "Accueil",
-      path: "/dashboard",
-      icon: <Home className="w-5 h-5" />,
-      id: "dashboard"
-    },
-    {
-      name: "Clients",
-      path: "/clients",
-      icon: <Users className="w-5 h-5" />,
-      id: "clients"
-    },
-    {
-      name: "Documents Pyramides",
-      path: "/documents-pyramides",
-      icon: <FileText className="w-5 h-5" />,
-      id: "documents-pyramides"
-    },
-    {
-      name: "Mes Documents",
-      path: "/mes-documents",
-      icon: <FolderOpen className="w-5 h-5" />,
-      id: "mes-documents"
-    },
-  ];
+  // Déterminer les éléments du menu en fonction du rôle
+  const getMenuItems = () => {
+    const commonItems = [
+      {
+        name: "Accueil",
+        path: "/dashboard",
+        icon: <Home className="w-5 h-5" />,
+        id: "dashboard"
+      },
+      {
+        name: "Documents Pyramides",
+        path: "/documents-pyramides",
+        icon: <FileText className="w-5 h-5" />,
+        id: "documents-pyramides"
+      },
+      {
+        name: "Mes Documents",
+        path: "/mes-documents",
+        icon: <FolderOpen className="w-5 h-5" />,
+        id: "mes-documents"
+      },
+    ];
+    
+    // Ajouter des éléments spécifiques en fonction du rôle
+    if (userRole === "admin") {
+      return [
+        ...commonItems,
+        {
+          name: "Clients",
+          path: "/clients",
+          icon: <Users className="w-5 h-5" />,
+          id: "clients"
+        },
+      ];
+    } else {
+      return [
+        ...commonItems,
+        {
+          name: "Mon Profil",
+          path: "/profile",
+          icon: <UserCircle className="w-5 h-5" />,
+          id: "profile"
+        },
+      ];
+    }
+  };
+
+  const menuItems = getMenuItems();
 
   return (
     <div className={cn("pb-12 h-full bg-sidebar", className)}>

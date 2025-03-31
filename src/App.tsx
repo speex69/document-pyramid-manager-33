@@ -14,6 +14,7 @@ import ClientDetail from "./pages/ClientDetail";
 import AdminClients from "./pages/AdminClients";
 import NotFound from "./pages/NotFound";
 import DashboardLayout from "./components/layout/DashboardLayout";
+import ClientProfile from "./pages/ClientProfile";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/clients/add" element={<AddClient />} />
             <Route path="/clients/:clientId" element={<ClientDetail />} />
             <Route path="/admin/clients" element={<AdminClients />} />
+            <Route path="/profile" element={<ClientProfile />} />
           </Route>
 
           {/* Not Found */}
