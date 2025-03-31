@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, UserCog } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface Client {
@@ -21,57 +21,77 @@ interface Client {
   email: string;
 }
 
+interface Admin {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
 export function UserProfile() {
   const [client, setClient] = useState<Client | null>(null);
+  const [admin, setAdmin] = useState<Admin | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Récupérer l'ID du client actuellement connecté
-    const clientId = localStorage.getItem("clientId");
-    const userRole = localStorage.getItem("userRole");
+    const role = localStorage.getItem("userRole");
+    setUserRole(role);
     
-    if (!clientId) return;
-    
-    // Combine initial clients with those from localStorage
-    const initialClients: Client[] = [
-      {
-        id: "1",
-        name: "Sophie Martin",
-        role: "Responsable commercial",
-        company: "Pyramide Conseil",
-        email: "s.martin@pyramide-conseil.fr",
-      },
-      {
-        id: "2",
-        name: "Thomas Bernard",
-        role: "Consultant senior",
-        company: "Pyramide Conseil",
-        email: "t.bernard@pyramide-conseil.fr",
-      },
-      {
-        id: "3",
-        name: "Julie Petit",
-        role: "Support client",
-        company: "Pyramide Conseil",
-        email: "j.petit@pyramide-conseil.fr",
+    if (role === "admin") {
+      // Admin details
+      setAdmin({
+        id: "admin1",
+        name: "Administrateur Pyramide",
+        email: "admin@example.com",
+        role: "Administrateur"
+      });
+    } else {
+      // Client details
+      const clientId = localStorage.getItem("clientId");
+      if (!clientId) return;
+      
+      // Combine initial clients with those from localStorage
+      const initialClients: Client[] = [
+        {
+          id: "1",
+          name: "Sophie Martin",
+          role: "Responsable commercial",
+          company: "Pyramide Conseil",
+          email: "s.martin@pyramide-conseil.fr",
+        },
+        {
+          id: "2",
+          name: "Thomas Bernard",
+          role: "Consultant senior",
+          company: "Pyramide Conseil",
+          email: "t.bernard@pyramide-conseil.fr",
+        },
+        {
+          id: "3",
+          name: "Julie Petit",
+          role: "Support client",
+          company: "Pyramide Conseil",
+          email: "j.petit@pyramide-conseil.fr",
+        }
+      ];
+      
+      const savedClients = localStorage.getItem("clients");
+      let allClients = [...initialClients];
+      
+      if (savedClients) {
+        try {
+          const parsedClients = JSON.parse(savedClients);
+          allClients = [...initialClients, ...parsedClients];
+        } catch (e) {
+          console.error("Error loading clients from localStorage", e);
+        }
       }
-    ];
-    
-    const savedClients = localStorage.getItem("clients");
-    let allClients = [...initialClients];
-    
-    if (savedClients) {
-      try {
-        const parsedClients = JSON.parse(savedClients);
-        allClients = [...initialClients, ...parsedClients];
-      } catch (e) {
-        console.error("Error loading clients from localStorage", e);
-      }
+      
+      // Find the client with the matching ID
+      const foundClient = allClients.find(c => c.id === clientId) || null;
+      setClient(foundClient);
     }
-    
-    // Find the client with the matching ID
-    const foundClient = allClients.find(c => c.id === clientId) || null;
-    setClient(foundClient);
   }, []);
 
   const handleLogout = () => {
@@ -81,12 +101,16 @@ export function UserProfile() {
     navigate("/login");
   };
 
-  // Si aucun client n'est trouvé, n'affichez rien
-  if (!client) {
+  // If no client or admin is found, don't display anything
+  if (!client && !admin) {
     return null;
   }
 
-  // Obtenir les initiales pour l'avatar
+  // Get the user data based on role
+  const userData = userRole === "admin" ? admin : client;
+  if (!userData) return null;
+
+  // Get initials for the avatar
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -99,12 +123,13 @@ export function UserProfile() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="flex items-center gap-2 outline-none">
-        <span className="text-sm font-medium hidden sm:block">
-          {client.name}
-        </span>
+        <div className="text-right mr-2 hidden sm:block">
+          <p className="text-sm font-medium">{userData.name}</p>
+          <p className="text-xs text-muted-foreground">{userRole === "admin" ? "Administrateur" : userData.role}</p>
+        </div>
         <Avatar className="h-8 w-8">
-          <AvatarFallback className="bg-primary text-primary-foreground">
-            {getInitials(client.name)}
+          <AvatarFallback className={`text-primary-foreground ${userRole === "admin" ? "bg-red-500" : "bg-primary"}`}>
+            {getInitials(userData.name)}
           </AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
@@ -112,7 +137,11 @@ export function UserProfile() {
         <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
         <DropdownMenuItem className="flex items-center gap-2" asChild>
           <Link to="/profile">
-            <User className="h-4 w-4" />
+            {userRole === "admin" ? (
+              <UserCog className="h-4 w-4" />
+            ) : (
+              <User className="h-4 w-4" />
+            )}
             <span>Mon profil</span>
           </Link>
         </DropdownMenuItem>
