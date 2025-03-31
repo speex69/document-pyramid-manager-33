@@ -4,7 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Home, Users, FileText, FolderOpen, LogOut, UserCircle } from "lucide-react";
+import { Home, Users, FileText, FolderOpen, UserCircle } from "lucide-react";
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -12,7 +12,6 @@ export function Sidebar({ className }: SidebarProps) {
   const [activeItem, setActiveItem] = useState("");
   const [userRole, setUserRole] = useState<string | null>(null);
   const location = useLocation();
-  const navigate = useNavigate();
   
   useEffect(() => {
     const path = location.pathname.split("/")[1];
@@ -21,13 +20,6 @@ export function Sidebar({ className }: SidebarProps) {
     const role = localStorage.getItem("userRole");
     setUserRole(role);
   }, [location.pathname]);
-
-  const handleLogout = () => {
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("isAuthenticated");
-    localStorage.removeItem("clientId");
-    navigate("/login");
-  };
 
   // Déterminer les éléments du menu en fonction du rôle
   const getMenuItems = () => {
@@ -105,15 +97,6 @@ export function Sidebar({ className }: SidebarProps) {
                 </Link>
               </Button>
             ))}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLogout}
-              className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground mt-8"
-            >
-              <LogOut className="w-5 h-5" />
-              <span className="ml-2">Déconnexion</span>
-            </Button>
           </div>
         </div>
       </div>
