@@ -100,5 +100,5 @@
 }
 
 .folder-icon {
-  @apply w-10 h-10 text-pyramide;
+  @apply w-10 h-10 text-red-500;
 }

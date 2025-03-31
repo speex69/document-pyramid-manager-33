@@ -4,9 +4,9 @@ import { useState, useEffect } from "react";
 
 // Sample initial data for the demo with colors and icons
 const samplePyramideFiles = [
-  { id: "folder-1", name: "Contrats", type: "folder" as const, parentId: null, color: "blue", icon: "folder-lock" },
-  { id: "folder-2", name: "Factures", type: "folder" as const, parentId: null, color: "green", icon: "folder-archive" },
-  { id: "folder-3", name: "Rapports", type: "folder" as const, parentId: null, color: "red", icon: "folder-sync" },
+  { id: "folder-1", name: "Contrats", type: "folder" as const, parentId: null },
+  { id: "folder-2", name: "Factures", type: "folder" as const, parentId: null },
+  { id: "folder-3", name: "Rapports", type: "folder" as const, parentId: null },
   { id: "file-1", name: "Présentation Pyramide.pdf", type: "file" as const, parentId: null },
   { id: "file-2", name: "Guide utilisateur.pdf", type: "file" as const, parentId: null },
   { id: "file-3", name: "Contrat cadre 2023.pdf", type: "file" as const, parentId: "folder-1" },

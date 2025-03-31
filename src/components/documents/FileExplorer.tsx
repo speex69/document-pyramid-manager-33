@@ -460,7 +460,7 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
                           size="icon"
                           onClick={() => navigateToFolder(file.id, file.name)}
                         >
-                          <Folder className="h-4 w-4" />
+                          <Folder className="h-4 w-4 text-red-500" />
                         </Button>
                       ) : (
                         <Button
