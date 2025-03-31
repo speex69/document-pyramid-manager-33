@@ -10,6 +10,7 @@ import DocumentsPyramides from "./pages/DocumentsPyramides";
 import MesDocuments from "./pages/MesDocuments";
 import Contacts from "./pages/Contacts";
 import AddContact from "./pages/AddContact";
+import ContactDetail from "./pages/ContactDetail";
 import AdminClients from "./pages/AdminClients";
 import NotFound from "./pages/NotFound";
 import DashboardLayout from "./components/layout/DashboardLayout";
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/mes-documents" element={<MesDocuments />} />
             <Route path="/contacts" element={<Contacts />} />
             <Route path="/contacts/add" element={<AddContact />} />
+            <Route path="/contacts/:contactId" element={<ContactDetail />} />
             <Route path="/admin/clients" element={<AdminClients />} />
           </Route>
 
