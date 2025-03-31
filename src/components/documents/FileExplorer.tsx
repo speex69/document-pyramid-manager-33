@@ -4,7 +4,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Folder, File, Plus, Search, Upload, SlidersHorizontal, ChevronDown, Trash2, Eye, LayoutGrid, LayoutList } from "lucide-react";
+import { 
+  Folder, 
+  File, 
+  Plus, 
+  Search, 
+  Upload, 
+  SlidersHorizontal, 
+  ChevronDown, 
+  Trash2, 
+  Eye, 
+  LayoutGrid, 
+  LayoutList,
+  FolderArchive,
+  FolderClosed,
+  FolderOpen,
+  FolderPlus,
+  FolderSync,
+  FolderKey,
+  FolderLock
+} from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
@@ -16,6 +35,8 @@ type FileType = {
   name: string;
   type: "folder" | "file";
   parentId: string | null;
+  color?: string;
+  icon?: string;
 };
 
 type FileExplorerProps = {
@@ -24,8 +45,45 @@ type FileExplorerProps = {
   initialFiles?: FileType[];
 };
 
+const folderColors = {
+  blue: "text-blue-500",
+  green: "text-green-500",
+  red: "text-red-500",
+  yellow: "text-yellow-500",
+  purple: "text-purple-500",
+  orange: "text-orange-500",
+  teal: "text-teal-500",
+  indigo: "text-indigo-500",
+  pink: "text-pink-500",
+  primary: "text-pyramide"
+};
+
+const folderIcons = {
+  default: "folder",
+  archive: "folder-archive",
+  closed: "folder-closed",
+  open: "folder-open",
+  plus: "folder-plus",
+  sync: "folder-sync", 
+  key: "folder-key",
+  lock: "folder-lock"
+};
+
 const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProps) => {
-  const [files, setFiles] = useState<FileType[]>(initialFiles);
+  const processedInitialFiles = initialFiles.map(file => {
+    if (file.type === "folder" && !file.color) {
+      const colorKeys = Object.keys(folderColors);
+      const randomColor = colorKeys[Math.floor(Math.random() * colorKeys.length)];
+      
+      const iconKeys = Object.keys(folderIcons);
+      const randomIcon = iconKeys[Math.floor(Math.random() * iconKeys.length)];
+      
+      return { ...file, color: randomColor, icon: randomIcon };
+    }
+    return file;
+  });
+
+  const [files, setFiles] = useState<FileType[]>(processedInitialFiles);
   const [currentFolder, setCurrentFolder] = useState<string | null>(null);
   const [breadcrumbs, setBreadcrumbs] = useState<{ id: string | null; name: string }[]>([
     { id: null, name: "Racine" },
@@ -46,6 +104,9 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  
+  const [newFolderColor, setNewFolderColor] = useState<string>("primary");
+  const [newFolderIcon, setNewFolderIcon] = useState<string>("default");
 
   useEffect(() => {
     const role = localStorage.getItem("userRole");
@@ -103,6 +164,8 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
       name: newFolderName,
       type: "folder",
       parentId: currentFolder,
+      color: newFolderColor,
+      icon: newFolderIcon,
     };
 
     setFiles([...files, newFolder]);
@@ -221,6 +284,23 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
     }
   };
 
+  const renderFileIcon = (file: FileType) => {
+    if (file.type === "file") {
+      return <File className="file-icon" />;
+    }
+    
+    switch(file.icon) {
+      case "folder-archive": return <FolderArchive className={`folder-icon ${file.color ? folderColors[file.color as keyof typeof folderColors] : folderColors.primary}`} />;
+      case "folder-closed": return <FolderClosed className={`folder-icon ${file.color ? folderColors[file.color as keyof typeof folderColors] : folderColors.primary}`} />;
+      case "folder-open": return <FolderOpen className={`folder-icon ${file.color ? folderColors[file.color as keyof typeof folderColors] : folderColors.primary}`} />;
+      case "folder-plus": return <FolderPlus className={`folder-icon ${file.color ? folderColors[file.color as keyof typeof folderColors] : folderColors.primary}`} />;
+      case "folder-sync": return <FolderSync className={`folder-icon ${file.color ? folderColors[file.color as keyof typeof folderColors] : folderColors.primary}`} />;
+      case "folder-key": return <FolderKey className={`folder-icon ${file.color ? folderColors[file.color as keyof typeof folderColors] : folderColors.primary}`} />;
+      case "folder-lock": return <FolderLock className={`folder-icon ${file.color ? folderColors[file.color as keyof typeof folderColors] : folderColors.primary}`} />;
+      default: return <Folder className={`folder-icon ${file.color ? folderColors[file.color as keyof typeof folderColors] : folderColors.primary}`} />;
+    }
+  };
+
   return (
     <Card className="w-full">
       <CardHeader className="border-b">
@@ -320,6 +400,95 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
                       onChange={(e) => setNewFolderName(e.target.value)}
                     />
                   </div>
+                  
+                  <div>
+                    <h3 className="mb-2 font-medium">Couleur du dossier</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(folderColors).map(([colorName, className]) => (
+                        <Button 
+                          key={colorName}
+                          type="button"
+                          variant={newFolderColor === colorName ? "secondary" : "outline"}
+                          className={`w-8 h-8 p-0 ${className}`}
+                          onClick={() => setNewFolderColor(colorName)}
+                          title={colorName}
+                        >
+                          {newFolderColor === colorName && <div className="w-2 h-2 rounded-full bg-current"></div>}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="mb-2 font-medium">Style du dossier</h3>
+                    <div className="grid grid-cols-4 gap-2">
+                      <Button
+                        type="button"
+                        variant={newFolderIcon === "default" ? "secondary" : "outline"}
+                        className="p-2"
+                        onClick={() => setNewFolderIcon("default")}
+                      >
+                        <Folder className={`w-5 h-5 ${folderColors[newFolderColor as keyof typeof folderColors]}`} />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={newFolderIcon === "folder-archive" ? "secondary" : "outline"}
+                        className="p-2"
+                        onClick={() => setNewFolderIcon("folder-archive")}
+                      >
+                        <FolderArchive className={`w-5 h-5 ${folderColors[newFolderColor as keyof typeof folderColors]}`} />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={newFolderIcon === "folder-closed" ? "secondary" : "outline"}
+                        className="p-2"
+                        onClick={() => setNewFolderIcon("folder-closed")}
+                      >
+                        <FolderClosed className={`w-5 h-5 ${folderColors[newFolderColor as keyof typeof folderColors]}`} />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={newFolderIcon === "folder-open" ? "secondary" : "outline"}
+                        className="p-2"
+                        onClick={() => setNewFolderIcon("folder-open")}
+                      >
+                        <FolderOpen className={`w-5 h-5 ${folderColors[newFolderColor as keyof typeof folderColors]}`} />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={newFolderIcon === "folder-plus" ? "secondary" : "outline"}
+                        className="p-2"
+                        onClick={() => setNewFolderIcon("folder-plus")}
+                      >
+                        <FolderPlus className={`w-5 h-5 ${folderColors[newFolderColor as keyof typeof folderColors]}`} />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={newFolderIcon === "folder-sync" ? "secondary" : "outline"}
+                        className="p-2"
+                        onClick={() => setNewFolderIcon("folder-sync")}
+                      >
+                        <FolderSync className={`w-5 h-5 ${folderColors[newFolderColor as keyof typeof folderColors]}`} />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={newFolderIcon === "folder-key" ? "secondary" : "outline"}
+                        className="p-2"
+                        onClick={() => setNewFolderIcon("folder-key")}
+                      >
+                        <FolderKey className={`w-5 h-5 ${folderColors[newFolderColor as keyof typeof folderColors]}`} />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={newFolderIcon === "folder-lock" ? "secondary" : "outline"}
+                        className="p-2"
+                        onClick={() => setNewFolderIcon("folder-lock")}
+                      >
+                        <FolderLock className={`w-5 h-5 ${folderColors[newFolderColor as keyof typeof folderColors]}`} />
+                      </Button>
+                    </div>
+                  </div>
+                  
                   <Button onClick={handleCreateFolder}>Créer</Button>
                 </div>
               </DialogContent>
@@ -362,11 +531,7 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
                         : handlePreview(file)
                     }
                   >
-                    {file.type === "folder" ? (
-                      <Folder className="folder-icon mb-2" />
-                    ) : (
-                      <File className="file-icon mb-2" />
-                    )}
+                    {renderFileIcon(file)}
                     <p className="text-center truncate w-full text-sm">{file.name}</p>
                   </Card>
                 </ContextMenuTrigger>
@@ -413,11 +578,7 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
               {sortedFiles.map((file) => (
                 <TableRow key={file.id}>
                   <TableCell>
-                    {file.type === "folder" ? (
-                      <Folder className="h-5 w-5 text-pyramide" />
-                    ) : (
-                      <File className="h-5 w-5 text-pyramide" />
-                    )}
+                    {renderFileIcon(file)}
                   </TableCell>
                   <TableCell
                     className="font-medium cursor-pointer"

@@ -1,10 +1,10 @@
 
 import FileExplorer from "@/components/documents/FileExplorer";
 
-// Sample initial data for the demo
+// Sample initial data for the demo with colors and icons
 const sampleUserFiles = [
-  { id: "folder-1", name: "Documents administratifs", type: "folder" as const, parentId: null },
-  { id: "folder-2", name: "Projets", type: "folder" as const, parentId: null },
+  { id: "folder-1", name: "Documents administratifs", type: "folder" as const, parentId: null, color: "indigo", icon: "folder-key" },
+  { id: "folder-2", name: "Projets", type: "folder" as const, parentId: null, color: "purple", icon: "folder-open" },
   { id: "file-1", name: "Note de service.pdf", type: "file" as const, parentId: null },
   { id: "file-2", name: "Planning 2023.xlsx", type: "file" as const, parentId: null },
   { id: "file-3", name: "Carte d'identité.pdf", type: "file" as const, parentId: "folder-1" },
