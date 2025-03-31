@@ -15,7 +15,10 @@ import {
   Trash2, 
   Eye, 
   LayoutGrid, 
-  LayoutList
+  LayoutList,
+  ArrowDownAZ,
+  ArrowUpAZ,
+  CalendarRange
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -56,7 +59,7 @@ const FileExplorer = ({ title, isEditable, initialFiles = [], enableDragAndDrop 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<FileType[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [sortMethod, setSortMethod] = useState<"name" | "type">("name");
+  const [sortMethod, setSortMethod] = useState<"name" | "type" | "date-asc" | "date-desc" | "name-asc" | "name-desc">("name");
   const { toast } = useToast();
   const [userRole, setUserRole] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -83,11 +86,26 @@ const FileExplorer = ({ title, isEditable, initialFiles = [], enableDragAndDrop 
   const displayedFiles = isSearching ? searchResults : filteredFiles;
 
   const sortedFiles = [...displayedFiles].sort((a, b) => {
-    if (sortMethod === "type") {
-      if (a.type === "folder" && b.type !== "folder") return -1;
-      if (a.type !== "folder" && b.type === "folder") return 1;
+    if (a.type === "folder" && b.type !== "folder") return -1;
+    if (a.type !== "folder" && b.type === "folder") return 1;
+    
+    switch (sortMethod) {
+      case "date-desc":
+        if (a.type === "folder" && b.type === "folder") return a.name.localeCompare(b.name);
+        return ((b as any).date?.localeCompare((a as any).date || "") || 0);
+      
+      case "date-asc":
+        if (a.type === "folder" && b.type === "folder") return a.name.localeCompare(b.name);
+        return ((a as any).date?.localeCompare((b as any).date || "") || 0);
+      
+      case "name-desc":
+        return b.name.localeCompare(a.name);
+      
+      case "name-asc":
+      case "name":
+      default:
+        return a.name.localeCompare(b.name);
     }
-    return a.name.localeCompare(b.name);
   });
 
   const handleSearch = () => {
@@ -257,14 +275,12 @@ const FileExplorer = ({ title, isEditable, initialFiles = [], enableDragAndDrop 
     return <Folder className="folder-icon text-red-500" />;
   };
   
-  // Drag and Drop handlers
   const handleDragStart = (e: DragEvent<HTMLDivElement>, item: FileType) => {
     if (!enableDragAndDrop || (!isEditable && userRole !== "admin")) return;
     
     e.dataTransfer.setData("text/plain", item.id);
     setDraggedItem(item);
     
-    // Add a custom drag image - optional enhancement
     const dragPreview = document.createElement("div");
     dragPreview.className = "bg-background p-2 rounded border shadow-md";
     dragPreview.innerHTML = `
@@ -283,7 +299,6 @@ const FileExplorer = ({ title, isEditable, initialFiles = [], enableDragAndDrop 
       console.log("Error setting drag image:", e);
     }
     
-    // Clean up after a short delay
     setTimeout(() => {
       document.body.removeChild(dragPreview);
     }, 0);
@@ -295,7 +310,6 @@ const FileExplorer = ({ title, isEditable, initialFiles = [], enableDragAndDrop 
     
     if (!enableDragAndDrop || !draggedItem) return;
     
-    // Don't allow files to be dropped onto other files
     if (targetFolder?.type === "file") {
       return;
     }
@@ -303,7 +317,6 @@ const FileExplorer = ({ title, isEditable, initialFiles = [], enableDragAndDrop 
     if (targetFolder && targetFolder.type === "folder") {
       setDragOverFolderId(targetFolder.id);
     } else if (!targetFolder) {
-      // When dragging over the empty area
       setIsDraggingOver(true);
     }
   };
@@ -322,7 +335,6 @@ const FileExplorer = ({ title, isEditable, initialFiles = [], enableDragAndDrop 
     
     if (!enableDragAndDrop || !draggedItem) return;
     
-    // Don't allow dropping onto files
     if (targetFolder?.type === "file") {
       toast({
         variant: "destructive",
@@ -338,16 +350,13 @@ const FileExplorer = ({ title, isEditable, initialFiles = [], enableDragAndDrop 
     
     let targetFolderId = targetFolder?.id;
     
-    // If no specific target folder and dropping in the container, use current folder
     if (!targetFolderId && !targetFolder) {
       targetFolderId = currentFolder;
     }
     
-    // Reset states
     setDragOverFolderId(null);
     setIsDraggingOver(false);
     
-    // Don't allow dropping a folder into itself or its descendants
     if (draggedItem.type === "folder" && targetFolderId === draggedItem.id) {
       toast({
         variant: "destructive",
@@ -358,12 +367,10 @@ const FileExplorer = ({ title, isEditable, initialFiles = [], enableDragAndDrop 
       return;
     }
     
-    // Check if target is descendant of the dragged folder
     if (draggedItem.type === "folder" && targetFolder?.type === "folder") {
       let current = targetFolder;
       let found = false;
       
-      // Check if target folder is a descendant of the dragged folder
       const checkIfDescendant = (folderId: string, potentialParentId: string): boolean => {
         const folder = files.find(f => f.id === folderId);
         if (!folder) return false;
@@ -383,7 +390,6 @@ const FileExplorer = ({ title, isEditable, initialFiles = [], enableDragAndDrop 
       }
     }
     
-    // Move the file/folder to the target folder
     const updatedFiles = files.map(file => {
       if (file.id === draggedItem.id) {
         return { ...file, parentId: targetFolderId };
@@ -402,10 +408,9 @@ const FileExplorer = ({ title, isEditable, initialFiles = [], enableDragAndDrop 
   };
 
   const handleEmptyAreaDrop = (e: DragEvent<HTMLDivElement>) => {
-    handleDrop(e); // Reuse handleDrop with no specific target folder
+    handleDrop(e);
   };
 
-  // Render the files container with drag and drop capability
   const renderFilesContainer = () => {
     if (sortedFiles.length === 0) {
       return (
@@ -487,7 +492,6 @@ const FileExplorer = ({ title, isEditable, initialFiles = [], enableDragAndDrop 
         </div>
       );
     } else {
-      // List view with drag and drop
       return (
         <div
           className={`${isDraggingOver ? 'p-2 border-2 border-dashed border-primary/50 rounded-lg' : ''}`}
@@ -614,8 +618,33 @@ const FileExplorer = ({ title, isEditable, initialFiles = [], enableDragAndDrop 
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setSortMethod("name")}>
-                  Trier par nom
+                <DropdownMenuItem 
+                  onClick={() => setSortMethod("name-asc")}
+                  className="flex items-center gap-2"
+                >
+                  <ArrowDownAZ className="h-4 w-4" />
+                  Trier par nom (A-Z)
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setSortMethod("name-desc")}
+                  className="flex items-center gap-2"
+                >
+                  <ArrowUpAZ className="h-4 w-4" />
+                  Trier par nom (Z-A)
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setSortMethod("date-desc")}
+                  className="flex items-center gap-2"
+                >
+                  <CalendarRange className="h-4 w-4" />
+                  Trier par date (récent)
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setSortMethod("date-asc")}
+                  className="flex items-center gap-2"
+                >
+                  <CalendarRange className="h-4 w-4" />
+                  Trier par date (ancien)
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setSortMethod("type")}>
                   Trier par type

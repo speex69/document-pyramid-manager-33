@@ -1,14 +1,6 @@
 
 import FileExplorer from "@/components/documents/FileExplorer";
 import { useState, useEffect } from "react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { CalendarRange, ArrowDownAZ, ArrowUpAZ } from "lucide-react";
 
 // Sample initial data for the demo with colors and icons
 const samplePyramideFiles = [
@@ -26,7 +18,7 @@ const samplePyramideFiles = [
 
 const DocumentsPyramides = () => {
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [sortOrder, setSortOrder] = useState<string>("default");
+  const [sortOrder, setSortOrder] = useState<string>("name-asc");
   const [sortedFiles, setSortedFiles] = useState(samplePyramideFiles);
 
   useEffect(() => {
@@ -96,44 +88,6 @@ const DocumentsPyramides = () => {
         <p className="text-muted-foreground">
           Consultez les documents mis à votre disposition par Pyramide.
         </p>
-      </div>
-      
-      <div className="flex justify-end mb-4">
-        <Select
-          value={sortOrder}
-          onValueChange={setSortOrder}
-        >
-          <SelectTrigger className="w-[220px]">
-            <SelectValue placeholder="Trier par..." />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="default">Par défaut</SelectItem>
-            <SelectItem value="date-desc">
-              <div className="flex items-center gap-2">
-                <CalendarRange className="h-4 w-4" />
-                Date (plus récent d'abord)
-              </div>
-            </SelectItem>
-            <SelectItem value="date-asc">
-              <div className="flex items-center gap-2">
-                <CalendarRange className="h-4 w-4" />
-                Date (plus ancien d'abord)
-              </div>
-            </SelectItem>
-            <SelectItem value="name-asc">
-              <div className="flex items-center gap-2">
-                <ArrowDownAZ className="h-4 w-4" />
-                Nom (A-Z)
-              </div>
-            </SelectItem>
-            <SelectItem value="name-desc">
-              <div className="flex items-center gap-2">
-                <ArrowUpAZ className="h-4 w-4" />
-                Nom (Z-A)
-              </div>
-            </SelectItem>
-          </SelectContent>
-        </Select>
       </div>
       
       <FileExplorer 
