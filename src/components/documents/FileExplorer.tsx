@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +34,7 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
   const [sortMethod, setSortMethod] = useState<"name" | "type">("name");
   const { toast } = useToast();
   const [userRole, setUserRole] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const role = localStorage.getItem("userRole");
@@ -103,22 +104,44 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
     });
   };
 
-  const handleUploadFile = () => {
-    // In a real application, this would open a file picker
-    const fileName = `Document-${Math.floor(Math.random() * 1000)}.pdf`;
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = e.target.files;
     
-    const newFile: FileType = {
-      id: `file-${Date.now()}`,
-      name: fileName,
+    if (!selectedFiles || selectedFiles.length === 0) {
+      return;
+    }
+
+    const fileArray = Array.from(selectedFiles);
+    const newFiles: FileType[] = fileArray.map(file => ({
+      id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      name: file.name,
       type: "file",
       parentId: currentFolder,
-    };
+    }));
 
-    setFiles([...files, newFile]);
-    toast({
-      title: "Fichier importé",
-      description: `Le fichier "${fileName}" a été importé avec succès.`,
-    });
+    setFiles([...files, ...newFiles]);
+
+    // Notification de succès
+    if (fileArray.length === 1) {
+      toast({
+        title: "Fichier importé",
+        description: `Le fichier "${fileArray[0].name}" a été importé avec succès.`,
+      });
+    } else {
+      toast({
+        title: "Fichiers importés",
+        description: `${fileArray.length} fichiers ont été importés avec succès.`,
+      });
+    }
+
+    // Réinitialiser l'input pour permettre de sélectionner à nouveau les mêmes fichiers
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
   };
 
   const navigateToFolder = (folderId: string | null, folderName: string) => {
@@ -239,10 +262,19 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
               </DialogContent>
             </Dialog>
 
+            {/* Input file caché */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              multiple
+              onChange={handleFileInputChange}
+            />
+
             <Button
               variant="outline"
               className="flex items-center gap-2"
-              onClick={handleUploadFile}
+              onClick={triggerFileInput}
             >
               <Upload className="h-4 w-4" /> Importer un document
             </Button>
