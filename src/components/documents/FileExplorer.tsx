@@ -1,12 +1,13 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Folder, File, Plus, Search, Upload, SlidersHorizontal, ChevronDown } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Folder, File, Plus, Search, Upload, SlidersHorizontal, ChevronDown, Trash2, Eye } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
 
 type FileType = {
   id: string;
@@ -35,6 +36,12 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
   const { toast } = useToast();
   const [userRole, setUserRole] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [fileToDelete, setFileToDelete] = useState<FileType | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  
+  const [previewFile, setPreviewFile] = useState<FileType | null>(null);
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
 
   useEffect(() => {
     const role = localStorage.getItem("userRole");
@@ -46,11 +53,9 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
 
   const sortedFiles = [...displayedFiles].sort((a, b) => {
     if (sortMethod === "type") {
-      // Sort by type first (folders first), then by name
       if (a.type === "folder" && b.type !== "folder") return -1;
       if (a.type !== "folder" && b.type === "folder") return 1;
     }
-    // Sort alphabetically
     return a.name.localeCompare(b.name);
   });
 
@@ -121,7 +126,6 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
 
     setFiles([...files, ...newFiles]);
 
-    // Notification de succès
     if (fileArray.length === 1) {
       toast({
         title: "Fichier importé",
@@ -134,7 +138,6 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
       });
     }
 
-    // Réinitialiser l'input pour permettre de sélectionner à nouveau les mêmes fichiers
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -149,19 +152,62 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
     clearSearch();
 
     if (folderId === null) {
-      // Going to root
       setBreadcrumbs([{ id: null, name: "Racine" }]);
     } else {
-      // Find the index of the folder in breadcrumbs
       const existingIndex = breadcrumbs.findIndex((crumb) => crumb.id === folderId);
       
       if (existingIndex > -1) {
-        // If folder is already in breadcrumbs, truncate to that point
         setBreadcrumbs(breadcrumbs.slice(0, existingIndex + 1));
       } else {
-        // Add new folder to breadcrumbs
         setBreadcrumbs([...breadcrumbs, { id: folderId, name: folderName }]);
       }
+    }
+  };
+
+  const handleDelete = (file: FileType) => {
+    setFileToDelete(file);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = () => {
+    if (!fileToDelete) return;
+    
+    if (fileToDelete.type === "folder") {
+      const deleteFolder = (folderId: string) => {
+        const children = files.filter(f => f.parentId === folderId);
+        
+        children.forEach(child => {
+          if (child.type === "folder") {
+            deleteFolder(child.id);
+          }
+        });
+        
+        setFiles(prevFiles => prevFiles.filter(f => f.parentId !== folderId && f.id !== folderId));
+      };
+      
+      deleteFolder(fileToDelete.id);
+      
+      toast({
+        title: "Dossier supprimé",
+        description: `Le dossier "${fileToDelete.name}" et son contenu ont été supprimés avec succès.`,
+      });
+    } else {
+      setFiles(prevFiles => prevFiles.filter(f => f.id !== fileToDelete.id));
+      
+      toast({
+        title: "Fichier supprimé",
+        description: `Le fichier "${fileToDelete.name}" a été supprimé avec succès.`,
+      });
+    }
+    
+    setShowDeleteDialog(false);
+    setFileToDelete(null);
+  };
+
+  const handlePreview = (file: FileType) => {
+    if (file.type === "file") {
+      setPreviewFile(file);
+      setShowPreviewDialog(true);
     }
   };
 
@@ -218,7 +264,6 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
         </div>
       </CardHeader>
       <CardContent className="p-6">
-        {/* Breadcrumbs navigation */}
         <div className="flex items-center space-x-2 mb-6 overflow-x-auto">
           {breadcrumbs.map((crumb, index) => (
             <div key={index} className="flex items-center">
@@ -235,7 +280,6 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
           ))}
         </div>
 
-        {/* Action buttons */}
         {(isEditable || userRole === "admin") && (
           <div className="flex flex-wrap gap-2 mb-6">
             <Dialog>
@@ -262,7 +306,6 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
               </DialogContent>
             </Dialog>
 
-            {/* Input file caché */}
             <input
               ref={fileInputRef}
               type="file"
@@ -281,7 +324,6 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
           </div>
         )}
 
-        {/* Files and folders list */}
         {sortedFiles.length === 0 ? (
           <div className="text-center py-10 text-muted-foreground">
             {isSearching 
@@ -291,22 +333,94 @@ const FileExplorer = ({ title, isEditable, initialFiles = [] }: FileExplorerProp
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {sortedFiles.map((file) => (
-              <Card
-                key={file.id}
-                className="cursor-pointer hover:bg-muted transition-colors p-2 flex flex-col items-center justify-center"
-                onClick={() => file.type === "folder" ? navigateToFolder(file.id, file.name) : null}
-              >
-                {file.type === "folder" ? (
-                  <Folder className="folder-icon mb-2" />
-                ) : (
-                  <File className="file-icon mb-2" />
-                )}
-                <p className="text-center truncate w-full text-sm">{file.name}</p>
-              </Card>
+              <ContextMenu key={file.id}>
+                <ContextMenuTrigger>
+                  <Card
+                    className="cursor-pointer hover:bg-muted transition-colors p-2 flex flex-col items-center justify-center"
+                    onClick={() => 
+                      file.type === "folder" 
+                        ? navigateToFolder(file.id, file.name) 
+                        : handlePreview(file)
+                    }
+                  >
+                    {file.type === "folder" ? (
+                      <Folder className="folder-icon mb-2" />
+                    ) : (
+                      <File className="file-icon mb-2" />
+                    )}
+                    <p className="text-center truncate w-full text-sm">{file.name}</p>
+                  </Card>
+                </ContextMenuTrigger>
+                <ContextMenuContent>
+                  {file.type === "folder" && (
+                    <ContextMenuItem 
+                      onClick={() => navigateToFolder(file.id, file.name)}
+                      className="flex items-center gap-2"
+                    >
+                      <Folder className="h-4 w-4" /> Ouvrir
+                    </ContextMenuItem>
+                  )}
+                  {file.type === "file" && (
+                    <ContextMenuItem 
+                      onClick={() => handlePreview(file)}
+                      className="flex items-center gap-2"
+                    >
+                      <Eye className="h-4 w-4" /> Aperçu
+                    </ContextMenuItem>
+                  )}
+                  {(isEditable || userRole === "admin") && (
+                    <ContextMenuItem 
+                      onClick={() => handleDelete(file)}
+                      className="flex items-center gap-2 text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" /> Supprimer
+                    </ContextMenuItem>
+                  )}
+                </ContextMenuContent>
+              </ContextMenu>
             ))}
           </div>
         )}
       </CardContent>
+      
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              {fileToDelete?.type === "folder"
+                ? `Êtes-vous sûr de vouloir supprimer le dossier "${fileToDelete?.name}" et tout son contenu ? Cette action est irréversible.`
+                : `Êtes-vous sûr de vouloir supprimer le fichier "${fileToDelete?.name}" ? Cette action est irréversible.`
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
+        <DialogContent className="sm:max-w-4xl h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>{previewFile?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center justify-center h-full">
+            <div className="w-full h-full flex flex-col items-center justify-center border rounded-md p-8 overflow-auto">
+              <File className="h-32 w-32 mb-4 text-muted-foreground" />
+              <p className="text-center text-muted-foreground">
+                Aperçu du document: <strong>{previewFile?.name}</strong>
+              </p>
+              <p className="text-center text-muted-foreground mt-4">
+                Dans une application réelle, le contenu du document serait affiché ici.
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
