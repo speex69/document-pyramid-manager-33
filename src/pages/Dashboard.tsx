@@ -20,18 +20,18 @@ const Dashboard = () => {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [greeting, setGreeting] = useState("");
   
-  // Données des documents Pyramides
+  // Données des documents Pyramides (avec l'administrateur comme auteur)
   const pyramideDocuments: Document[] = [
-    { name: "Présentation Pyramide.pdf", date: "01/06/2023", author: "Sophie Martin" },
-    { name: "Rapport Annuel 2022.pdf", date: "15/05/2023", author: "Thomas Bernard" },
-    { name: "Guide utilisateur.pdf", date: "10/05/2023", author: "Julie Petit" },
+    { name: "Présentation Pyramide.pdf", date: "01/06/2023", author: "Admin Pyramide" },
+    { name: "Rapport Annuel 2022.pdf", date: "15/05/2023", author: "Admin Pyramide" },
+    { name: "Guide utilisateur.pdf", date: "10/05/2023", author: "Admin Pyramide" },
   ];
   
-  // Données des documents personnels
+  // Données des documents personnels (avec les noms des clients)
   const userDocuments: Document[] = [
-    { name: "Note de service.pdf", date: "28/05/2023", author: "Vous" },
-    { name: "Planning 2023.xlsx", date: "20/05/2023", author: "Vous" },
-    { name: "Carte d'identité.pdf", date: "05/05/2023", author: "Vous" },
+    { name: "Note de service.pdf", date: "28/05/2023", author: "Sophie Martin" },
+    { name: "Planning 2023.xlsx", date: "20/05/2023", author: "Thomas Bernard" },
+    { name: "Carte d'identité.pdf", date: "05/05/2023", author: "Julie Petit" },
   ];
   
   // Données des clients
@@ -84,7 +84,7 @@ const Dashboard = () => {
                   <div className="truncate max-w-[150px]">{doc.name}</div>
                   <div className="flex gap-2 items-center">
                     <span className="text-xs text-muted-foreground">{doc.date}</span>
-                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                    <span className="text-xs bg-gray-100 text-gray-800 px-2 py-0.5 rounded-full">
                       {doc.author}
                     </span>
                   </div>
@@ -111,7 +111,7 @@ const Dashboard = () => {
                   <div className="truncate max-w-[150px]">{doc.name}</div>
                   <div className="flex gap-2 items-center">
                     <span className="text-xs text-muted-foreground">{doc.date}</span>
-                    <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
+                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
                       {doc.author}
                     </span>
                   </div>
